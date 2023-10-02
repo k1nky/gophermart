@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/k1nky/gophermart/internal/entity/user"
+	"github.com/k1nky/gophermart/internal/entity"
 	"github.com/k1nky/gophermart/internal/service/auth/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -29,7 +29,7 @@ func (suite *authServiceTestSuite) SetupTest() {
 }
 
 func (suite *authServiceTestSuite) TestRegisterNewUser() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -44,7 +44,7 @@ func (suite *authServiceTestSuite) TestRegisterNewUser() {
 }
 
 func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -58,7 +58,7 @@ func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
 }
 
 func (suite *authServiceTestSuite) TestRegisterUnexpectedError() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -73,7 +73,7 @@ func (suite *authServiceTestSuite) TestRegisterUnexpectedError() {
 }
 
 func (suite *authServiceTestSuite) TestLoginCorrectCredentials() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -89,7 +89,7 @@ func (suite *authServiceTestSuite) TestLoginCorrectCredentials() {
 }
 
 func (suite *authServiceTestSuite) TestLoginIncorrectPassword() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -105,7 +105,7 @@ func (suite *authServiceTestSuite) TestLoginIncorrectPassword() {
 }
 
 func (suite *authServiceTestSuite) TestLoginUserNotExists() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -119,7 +119,7 @@ func (suite *authServiceTestSuite) TestLoginUserNotExists() {
 }
 
 func (suite *authServiceTestSuite) TestLoginUnexpectedError() {
-	u := user.User{
+	u := entity.User{
 		Login:    "user",
 		Password: "password",
 	}

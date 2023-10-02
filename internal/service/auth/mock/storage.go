@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	user "github.com/k1nky/gophermart/internal/entity/user"
+	entity "github.com/k1nky/gophermart/internal/entity"
 )
 
 // MockStorage is a mock of Storage interface.
@@ -36,10 +36,10 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // GetUser mocks base method.
-func (m *MockStorage) GetUser(ctx context.Context, login string) (*user.User, error) {
+func (m *MockStorage) GetUser(ctx context.Context, login string) (*entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", ctx, login)
-	ret0, _ := ret[0].(*user.User)
+	ret0, _ := ret[0].(*entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -51,10 +51,10 @@ func (mr *MockStorageMockRecorder) GetUser(ctx, login interface{}) *gomock.Call 
 }
 
 // NewUser mocks base method.
-func (m *MockStorage) NewUser(ctx context.Context, u user.User) (*user.User, error) {
+func (m *MockStorage) NewUser(ctx context.Context, u entity.User) (*entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewUser", ctx, u)
-	ret0, _ := ret[0].(*user.User)
+	ret0, _ := ret[0].(*entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

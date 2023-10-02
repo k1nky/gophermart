@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/k1nky/gophermart/internal/entity/user"
+	"github.com/k1nky/gophermart/internal/entity"
 )
 
 //go:generate mockgen -source=auth.go -destination=mock/storage.go -package=mock Storage
 type Storage interface {
-	GetUser(ctx context.Context, login string) (*user.User, error)
-	NewUser(ctx context.Context, u user.User) (*user.User, error)
+	GetUser(ctx context.Context, login string) (*entity.User, error)
+	NewUser(ctx context.Context, u entity.User) (*entity.User, error)
 }
 
 type Service struct {
@@ -35,7 +35,7 @@ func New(secret string, tokenExpiration time.Duration, store Storage) *Service {
 	return s
 }
 
-func (s *Service) Register(ctx context.Context, newUser user.User) (string, error) {
+func (s *Service) Register(ctx context.Context, newUser entity.User) (string, error) {
 	u, err := s.store.GetUser(ctx, newUser.Login)
 	if err != nil {
 		return "", err
@@ -50,7 +50,7 @@ func (s *Service) Register(ctx context.Context, newUser user.User) (string, erro
 	return token, err
 }
 
-func (s *Service) Login(ctx context.Context, credentials user.User) (string, error) {
+func (s *Service) Login(ctx context.Context, credentials entity.User) (string, error) {
 	u, err := s.store.GetUser(ctx, credentials.Login)
 	if err != nil {
 		return "", err

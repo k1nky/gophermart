@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/k1nky/gophermart/internal/entity/user"
+	"github.com/k1nky/gophermart/internal/entity"
 )
 
 type AuthService interface {
 	IsDuplicateLogin(err error) bool
 	IsIncorrectCredentials(err error) bool
-	Register(ctx context.Context, credentials user.User) (string, error)
-	Login(ctx context.Context, credentials user.User) (string, error)
+	Register(ctx context.Context, credentials entity.User) (string, error)
+	Login(ctx context.Context, credentials entity.User) (string, error)
 }
 
 type Adapter struct {
@@ -67,7 +67,7 @@ func New(ctx context.Context, address string, port int) *Adapter {
 // - `409` — логин уже занят;
 // - `500` — внутренняя ошибка сервера.
 func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
-	credentials := user.User{}
+	credentials := entity.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -100,7 +100,7 @@ func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 // - `401` — неверная пара логин/пароль;
 // - `500` — внутренняя ошибка сервера.
 func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
-	credentials := user.User{}
+	credentials := entity.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
