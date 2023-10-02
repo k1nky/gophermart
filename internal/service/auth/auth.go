@@ -9,6 +9,7 @@ import (
 	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
+//go:generate mockgen -source=auth.go -destination=mock/storage.go -package=mock Storage
 type Storage interface {
 	GetUser(ctx context.Context, login string) (*user.User, error)
 	NewUser(ctx context.Context, u user.User) (*user.User, error)
@@ -29,6 +30,7 @@ func New(secret string, tokenExpiration time.Duration, store Storage) *Service {
 	s := &Service{
 		secret:          []byte(secret),
 		tokenExpiration: tokenExpiration,
+		store:           store,
 	}
 	return s
 }
@@ -44,21 +46,23 @@ func (s *Service) Register(ctx context.Context, newUser user.User) (string, erro
 	if u, err = s.store.NewUser(ctx, newUser); err != nil {
 		return "", err
 	}
-	return s.GenerateToken(PrivateClaims{Login: u.Login})
+	token, err := s.GenerateToken(PrivateClaims{Login: u.Login})
+	return token, err
 }
 
 func (s *Service) Login(ctx context.Context, credentials user.User) (string, error) {
 	u, err := s.store.GetUser(ctx, credentials.Login)
 	if err != nil {
-		if u == nil {
-			return "", fmt.Errorf("%s %w", credentials.Login, ErrInvalidCredentials)
-		}
 		return "", err
+	}
+	if u == nil {
+		return "", fmt.Errorf("%s %w", credentials.Login, ErrInvalidCredentials)
 	}
 	if err := u.CheckPassword(credentials.Password); err != nil {
 		return "", fmt.Errorf("%s %w", credentials.Login, ErrInvalidCredentials)
 	}
-	return s.GenerateToken(PrivateClaims{Login: u.Login})
+	token, err := s.GenerateToken(PrivateClaims{Login: u.Login})
+	return token, err
 }
 
 func (s *Service) IsDuplicateLogin(err error) bool {
