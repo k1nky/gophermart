@@ -13,8 +13,10 @@ import (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, credentials user.User) error
-	Login(ctx context.Context, credentials user.User) error
+	IsDuplicateLogin(err error) bool
+	IsIncorrectCredentials(err error) bool
+	Register(ctx context.Context, credentials user.User) (string, error)
+	Login(ctx context.Context, credentials user.User) (string, error)
 }
 
 type Adapter struct {
@@ -70,12 +72,16 @@ func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err := a.auth.Register(r.Context(), credentials)
+	signedToken, err := a.auth.Register(r.Context(), credentials)
 	if err != nil {
-		// TODO: если логин уже заняты
-		w.WriteHeader(http.StatusInternalServerError)
+		if a.auth.IsDuplicateLogin(err) {
+			w.WriteHeader(http.StatusConflict)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
+	w.Header().Set("Authorization", signedToken)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -99,11 +105,15 @@ func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err := a.auth.Login(r.Context(), credentials)
+	signedToken, err := a.auth.Login(r.Context(), credentials)
 	if err != nil {
-		// TODO: неверная пара логин/пароль
-		w.WriteHeader(http.StatusInternalServerError)
+		if a.auth.IsIncorrectCredentials(err) {
+			w.WriteHeader(http.StatusUnauthorized)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
+	w.Header().Set("Authorization", signedToken)
 	w.WriteHeader(http.StatusOK)
 }

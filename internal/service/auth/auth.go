@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/k1nky/gophermart/internal/entity/user"
@@ -18,6 +20,11 @@ type Service struct {
 	store           Storage
 }
 
+var (
+	ErrDuplicateError     = errors.New("login already exists")
+	ErrInvalidCredentials = errors.New("login or password is not correct")
+)
+
 func New(secret string, tokenExpiration time.Duration, store Storage) *Service {
 	s := &Service{
 		secret:          []byte(secret),
@@ -32,10 +39,32 @@ func (s *Service) Register(ctx context.Context, newUser user.User) (string, erro
 		return "", err
 	}
 	if u != nil {
-		// TODO: user already exist
+		return "", fmt.Errorf("%s %w", newUser.Login, ErrDuplicateError)
 	}
 	if u, err = s.store.NewUser(ctx, newUser); err != nil {
 		return "", err
 	}
-	return s.GenerateToken(TokenData{Login: u.Login})
+	return s.GenerateToken(PrivateClaims{Login: u.Login})
+}
+
+func (s *Service) Login(ctx context.Context, credentials user.User) (string, error) {
+	u, err := s.store.GetUser(ctx, credentials.Login)
+	if err != nil {
+		if u == nil {
+			return "", fmt.Errorf("%s %w", credentials.Login, ErrInvalidCredentials)
+		}
+		return "", err
+	}
+	if err := u.CheckPassword(credentials.Password); err != nil {
+		return "", fmt.Errorf("%s %w", credentials.Login, ErrInvalidCredentials)
+	}
+	return s.GenerateToken(PrivateClaims{Login: u.Login})
+}
+
+func (s *Service) IsDuplicateLogin(err error) bool {
+	return errors.Is(err, ErrDuplicateError)
+}
+
+func (s *Service) IsIncorrectCredentials(err error) bool {
+	return errors.Is(err, ErrInvalidCredentials)
 }

@@ -7,36 +7,36 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type TokenData struct {
+type PrivateClaims struct {
 	Login string
 }
 
 type Claims struct {
 	jwt.RegisteredClaims
-	TokenData
+	PrivateClaims
 }
 
-func (s *Service) GenerateToken(d TokenData) (string, error) {
+func (s *Service) GenerateToken(d PrivateClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiration)),
 		},
-		TokenData: d,
+		PrivateClaims: d,
 	})
 
 	return token.SignedString(s.secret)
 }
 
-func (s *Service) ValidateToken(signedToken string) (TokenData, error) {
+func (s *Service) ValidateToken(signedToken string) (PrivateClaims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(signedToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return s.secret, nil
 	})
 	if err != nil {
-		return TokenData{}, err
+		return PrivateClaims{}, err
 	}
 	if !token.Valid {
-		return TokenData{}, fmt.Errorf("token invalid")
+		return PrivateClaims{}, fmt.Errorf("token invalid")
 	}
-	return claims.TokenData, nil
+	return claims.PrivateClaims, nil
 }
