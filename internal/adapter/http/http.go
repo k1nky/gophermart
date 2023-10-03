@@ -15,7 +15,7 @@ import (
 type AuthService interface {
 	IsDuplicateLogin(err error) bool
 	IsIncorrectCredentials(err error) bool
-	Register(ctx context.Context, credentials entity.User) (string, error)
+	Register(ctx context.Context, credentials *entity.User) (string, error)
 	Login(ctx context.Context, credentials entity.User) (string, error)
 }
 
@@ -23,8 +23,10 @@ type Adapter struct {
 	auth AuthService
 }
 
-func New(ctx context.Context, address string, port int) *Adapter {
-	a := &Adapter{}
+func New(ctx context.Context, address string, port int, auth AuthService) *Adapter {
+	a := &Adapter{
+		auth: auth,
+	}
 
 	r := chi.NewRouter()
 	r.Route("/api/user", func(r chi.Router) {
@@ -72,7 +74,7 @@ func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	signedToken, err := a.auth.Register(r.Context(), credentials)
+	signedToken, err := a.auth.Register(r.Context(), &credentials)
 	if err != nil {
 		if a.auth.IsDuplicateLogin(err) {
 			w.WriteHeader(http.StatusConflict)

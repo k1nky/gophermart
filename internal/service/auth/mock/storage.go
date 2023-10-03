@@ -50,13 +50,26 @@ func (mr *MockStorageMockRecorder) GetUser(ctx, login interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockStorage)(nil).GetUser), ctx, login)
 }
 
+// IsUniqueViolation mocks base method.
+func (m *MockStorage) IsUniqueViolation(err error) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsUniqueViolation", err)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsUniqueViolation indicates an expected call of IsUniqueViolation.
+func (mr *MockStorageMockRecorder) IsUniqueViolation(err interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsUniqueViolation", reflect.TypeOf((*MockStorage)(nil).IsUniqueViolation), err)
+}
+
 // NewUser mocks base method.
-func (m *MockStorage) NewUser(ctx context.Context, u entity.User) (*entity.User, error) {
+func (m *MockStorage) NewUser(ctx context.Context, u *entity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewUser", ctx, u)
-	ret0, _ := ret[0].(*entity.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // NewUser indicates an expected call of NewUser.

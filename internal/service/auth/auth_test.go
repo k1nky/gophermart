@@ -35,10 +35,9 @@ func (suite *authServiceTestSuite) TestRegisterNewUser() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, nil)
-	suite.store.EXPECT().NewUser(gomock.Any(), u).Return(&u, nil)
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(nil)
 
-	token, err := suite.svc.Register(ctx, u)
+	token, err := suite.svc.Register(ctx, &u)
 	suite.NoError(err)
 	suite.NotEmpty(token)
 }
@@ -50,10 +49,11 @@ func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(errors.New("duplicate"))
+	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(true)
 
-	token, err := suite.svc.Register(ctx, u)
-	suite.ErrorIs(err, ErrDuplicateError)
+	token, err := suite.svc.Register(ctx, &u)
+	suite.ErrorIs(err, ErrDuplicateLoginError)
 	suite.Empty(token)
 }
 
@@ -64,10 +64,10 @@ func (suite *authServiceTestSuite) TestRegisterUnexpectedError() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, nil)
-	suite.store.EXPECT().NewUser(gomock.Any(), u).Return(nil, errors.New("unexpected error"))
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(errors.New("unexpected error"))
+	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(false)
 
-	token, err := suite.svc.Register(ctx, u)
+	token, err := suite.svc.Register(ctx, &u)
 	suite.Error(err)
 	suite.Empty(token)
 }

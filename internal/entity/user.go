@@ -5,6 +5,7 @@ import "golang.org/x/crypto/bcrypt"
 //go:generate easyjson user.go
 //easyjson:json
 type User struct {
+	ID       uint64
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }

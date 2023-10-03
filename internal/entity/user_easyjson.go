@@ -36,6 +36,8 @@ func easyjson9e1087fdDecodeGithubComK1nkyGophermartInternalEntity(in *jlexer.Lex
 			continue
 		}
 		switch key {
+		case "ID":
+			out.ID = uint64(in.Uint64())
 		case "login":
 			out.Login = string(in.String())
 		case "password":
@@ -55,8 +57,13 @@ func easyjson9e1087fdEncodeGithubComK1nkyGophermartInternalEntity(out *jwriter.W
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"login\":"
+		const prefix string = ",\"ID\":"
 		out.RawString(prefix[1:])
+		out.Uint64(uint64(in.ID))
+	}
+	{
+		const prefix string = ",\"login\":"
+		out.RawString(prefix)
 		out.String(string(in.Login))
 	}
 	{
