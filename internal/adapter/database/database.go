@@ -42,7 +42,7 @@ func (a *Adapter) Open(dsn string) (err error) {
 }
 
 func (a *Adapter) Initialize(dsn string) error {
-	m, err := migrate.New("file://migrations", dsn)
+	m, err := migrate.New("file://db/migrations", dsn)
 	if err != nil {
 		return err
 	}

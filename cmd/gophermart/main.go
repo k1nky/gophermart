@@ -15,7 +15,9 @@ import (
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	store := database.New()
-	store.Open("postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable")
+	if err := store.Open("postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable"); err != nil {
+		panic(err)
+	}
 	authService := auth.New("secret", 3*time.Hour, store)
 	http.New(ctx, "", 8080, authService)
 
