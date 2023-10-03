@@ -19,19 +19,11 @@ cover:
 	go test -cover ./... -coverprofile cover.out
 	go tool cover -html cover.out -o cover.html
 
-build: gvt buildagent buildserver
+build: gvt 
+	go build  -C cmd/gophermart .
 
-buildserver:
-	go build  -C cmd/server .
-
-buildagent:
-	go build -C cmd/agent .
-
-runserver:
-	go run ./cmd/server
-
-runagent:
-	go run ./cmd/agent
+run:
+	go run ./cmd/gophermart
 
 rundb:
 	docker compose up -d
@@ -39,7 +31,14 @@ rundb:
 racetest:
 	go test -v -race ./...
 
-autotest: autotest1
-
-autotest1: buildserver
-	metricstest -test.v -test.run=^TestIteration1$$ -binary-path=cmd/server/server
+autotest: build
+	bin/gophermarttest \
+		-test.v -test.run=^TestGophermart$$ \
+		-gophermart-binary-path=cmd/gophermart/gophermart \
+		-gophermart-host=localhost \
+		-gophermart-port=8080 \
+		-gophermart-database-uri="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable" \
+		-accrual-binary-path=cmd/accrual/accrual_linux_amd64 \
+		-accrual-host=localhost \
+		-accrual-port=8081 \
+		-accrual-database-uri="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable"
