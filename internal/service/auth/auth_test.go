@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/k1nky/gophermart/internal/entity"
+	"github.com/k1nky/gophermart/internal/entity/user"
 	"github.com/k1nky/gophermart/internal/service/auth/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -29,83 +29,94 @@ func (suite *authServiceTestSuite) SetupTest() {
 }
 
 func (suite *authServiceTestSuite) TestRegisterNewUser() {
-	u := entity.User{
+	u := user.User{
 		Login:    "user",
 		Password: "password",
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(nil)
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(&user.User{
+		Login:    "user",
+		Password: "password",
+		ID:       1,
+	}, nil)
 
-	token, err := suite.svc.Register(ctx, &u)
+	token, err := suite.svc.Register(ctx, u)
 	suite.NoError(err)
 	suite.NotEmpty(token)
 }
 
 func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
-	u := entity.User{
+	u := user.User{
 		Login:    "user",
 		Password: "password",
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(errors.New("duplicate"))
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(nil, errors.New("duplicate"))
 	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(true)
 
-	token, err := suite.svc.Register(ctx, &u)
+	token, err := suite.svc.Register(ctx, u)
 	suite.ErrorIs(err, ErrDuplicateLoginError)
 	suite.Empty(token)
 }
 
 func (suite *authServiceTestSuite) TestRegisterUnexpectedError() {
-	u := entity.User{
+	u := user.User{
 		Login:    "user",
 		Password: "password",
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).SetArg(1, u).Return(errors.New("unexpected error"))
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(nil, errors.New("unexpected error"))
 	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(false)
 
-	token, err := suite.svc.Register(ctx, &u)
+	token, err := suite.svc.Register(ctx, u)
 	suite.Error(err)
 	suite.Empty(token)
 }
 
 func (suite *authServiceTestSuite) TestLoginCorrectCredentials() {
-	u := entity.User{
+	credentials := user.User{
 		Login:    "user",
 		Password: "password",
 	}
-	existUser := u
-	existUser.HashPassword(u.Password)
+	password, _ := user.HashPassword("password")
+	u := user.User{
+		ID:       1,
+		Login:    "user",
+		Password: password,
+	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&existUser, nil)
+	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
 
-	token, err := suite.svc.Login(ctx, u)
+	token, err := suite.svc.Login(ctx, credentials)
 	suite.NoError(err)
 	suite.NotEmpty(token)
 }
 
 func (suite *authServiceTestSuite) TestLoginIncorrectPassword() {
-	u := entity.User{
+	credentials := user.User{
 		Login:    "user",
 		Password: "password",
 	}
-	existUser := u
-	existUser.HashPassword("secret")
+	password, _ := user.HashPassword("password2")
+	u := user.User{
+		Login:    "user",
+		Password: password,
+	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&existUser, nil)
+	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
 
-	token, err := suite.svc.Login(ctx, u)
+	token, err := suite.svc.Login(ctx, credentials)
 	suite.ErrorIs(err, ErrInvalidCredentials)
 	suite.Empty(token)
 }
 
 func (suite *authServiceTestSuite) TestLoginUserNotExists() {
-	u := entity.User{
+	credentials := user.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -113,13 +124,13 @@ func (suite *authServiceTestSuite) TestLoginUserNotExists() {
 
 	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, nil)
 
-	token, err := suite.svc.Login(ctx, u)
+	token, err := suite.svc.Login(ctx, credentials)
 	suite.ErrorIs(err, ErrInvalidCredentials)
 	suite.Empty(token)
 }
 
 func (suite *authServiceTestSuite) TestLoginUnexpectedError() {
-	u := entity.User{
+	credentials := user.User{
 		Login:    "user",
 		Password: "password",
 	}
@@ -127,37 +138,37 @@ func (suite *authServiceTestSuite) TestLoginUnexpectedError() {
 
 	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, errors.New("unexpected error"))
 
-	token, err := suite.svc.Login(ctx, u)
+	token, err := suite.svc.Login(ctx, credentials)
 	suite.Error(err)
 	suite.Empty(token)
 }
 
-func (suite *authServiceTestSuite) TestValidateToken() {
-	claims := PrivateClaims{
+func (suite *authServiceTestSuite) TestParseToken() {
+	claims := user.PrivateClaims{
 		Login: "user",
 	}
 	token, err := suite.svc.GenerateToken(claims)
 	suite.NoError(err)
-	got, err := suite.svc.ValidateToken(token)
+	got, err := suite.svc.ParseToken(token)
 	suite.NoError(err)
 	suite.Equal(claims, got)
 }
 
-func (suite *authServiceTestSuite) TestValidateExpiredToken() {
-	claims := PrivateClaims{
+func (suite *authServiceTestSuite) TestParseExpiredToken() {
+	claims := user.PrivateClaims{
 		Login: "user",
 	}
 	suite.svc.tokenExpiration = 1 * time.Second
 	token, err := suite.svc.GenerateToken(claims)
 	suite.NoError(err)
 	time.Sleep(3 * time.Second)
-	got, err := suite.svc.ValidateToken(token)
+	got, err := suite.svc.ParseToken(token)
 	suite.Error(err)
 	suite.Empty(got)
 }
 
-func (suite *authServiceTestSuite) TestValidateInvalidToken() {
-	got, err := suite.svc.ValidateToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTYyODIxMDgsIkxvZ2luIjoidXNlciJ9.44K4rEcXS1bvyQY8h-TomgkKCC6Yysf44nl7O3n0KUI_invalid")
+func (suite *authServiceTestSuite) TestParseInvalidToken() {
+	got, err := suite.svc.ParseToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTYyODIxMDgsIkxvZ2luIjoidXNlciJ9.44K4rEcXS1bvyQY8h-TomgkKCC6Yysf44nl7O3n0KUI_invalid")
 	suite.Error(err)
 	suite.Empty(got)
 }

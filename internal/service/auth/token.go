@@ -1,42 +1,48 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/k1nky/gophermart/internal/entity/user"
 )
-
-type PrivateClaims struct {
-	Login string
-}
 
 type Claims struct {
 	jwt.RegisteredClaims
-	PrivateClaims
+	user.PrivateClaims
 }
 
-func (s *Service) GenerateToken(d PrivateClaims) (string, error) {
+var (
+	ErrInvalidToken = errors.New("invalid token")
+)
+
+func (s *Service) GenerateToken(claims user.PrivateClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenExpiration)),
 		},
-		PrivateClaims: d,
+		PrivateClaims: claims,
 	})
 
 	return token.SignedString(s.secret)
 }
 
-func (s *Service) ValidateToken(signedToken string) (PrivateClaims, error) {
+func (s *Service) ParseToken(signedToken string) (user.PrivateClaims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(signedToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return s.secret, nil
 	})
 	if err != nil {
-		return PrivateClaims{}, err
+		return user.PrivateClaims{}, err
 	}
 	if !token.Valid {
-		return PrivateClaims{}, fmt.Errorf("token invalid")
+		return user.PrivateClaims{}, fmt.Errorf("token invalid")
 	}
 	return claims.PrivateClaims, nil
+}
+
+func (s *Service) IsInvalidToken(err error) bool {
+	return errors.Is(err, ErrInvalidToken)
 }

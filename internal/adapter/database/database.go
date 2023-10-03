@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/k1nky/gophermart/internal/entity"
+	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
 const (
@@ -47,11 +47,14 @@ func (a *Adapter) Initialize(dsn string) error {
 		return err
 	}
 	err = m.Up()
+	if errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
 	return err
 }
 
-func (a *Adapter) GetUser(ctx context.Context, login string) (*entity.User, error) {
-	u := &entity.User{
+func (a *Adapter) GetUser(ctx context.Context, login string) (*user.User, error) {
+	u := &user.User{
 		Login: login,
 	}
 	row := a.QueryRowContext(ctx, `SELECT password FROM users WHERE login=$1`, login)
@@ -67,7 +70,7 @@ func (a *Adapter) GetUser(ctx context.Context, login string) (*entity.User, erro
 	return u, nil
 }
 
-func (a *Adapter) NewUser(ctx context.Context, u *entity.User) error {
+func (a *Adapter) NewUser(ctx context.Context, u user.User) (*user.User, error) {
 
 	row := a.QueryRowContext(ctx, `
 		INSERT INTO users AS u (login, password)
@@ -78,15 +81,15 @@ func (a *Adapter) NewUser(ctx context.Context, u *entity.User) error {
 		var pgerr *pgconn.PgError
 		if errors.As(err, &pgerr) {
 			if pgerrcode.IsIntegrityConstraintViolation(pgerr.Code) {
-				return fmt.Errorf("%s %w", u.Login, ErrUniqueViolation)
+				return nil, fmt.Errorf("%s %w", u.Login, ErrUniqueViolation)
 			}
 		}
-		return err
+		return nil, err
 	}
 	if err := row.Scan(&u.ID); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &u, nil
 }
 
 func (a *Adapter) IsUniqueViolation(err error) bool {

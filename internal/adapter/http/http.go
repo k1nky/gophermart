@@ -9,14 +9,16 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/k1nky/gophermart/internal/entity"
+	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
 type AuthService interface {
 	IsDuplicateLogin(err error) bool
 	IsIncorrectCredentials(err error) bool
-	Register(ctx context.Context, credentials *entity.User) (string, error)
-	Login(ctx context.Context, credentials entity.User) (string, error)
+	IsInvalidToken(err error) bool
+	Register(ctx context.Context, u user.User) (string, error)
+	Login(ctx context.Context, u user.User) (string, error)
+	ParseToken(signedToken string) (user.PrivateClaims, error)
 }
 
 type Adapter struct {
@@ -29,6 +31,7 @@ func New(ctx context.Context, address string, port int, auth AuthService) *Adapt
 	}
 
 	r := chi.NewRouter()
+	r.Use()
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.Register)
 		r.Post("/login", a.Login)
@@ -69,12 +72,12 @@ func New(ctx context.Context, address string, port int, auth AuthService) *Adapt
 // - `409` — логин уже занят;
 // - `500` — внутренняя ошибка сервера.
 func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
-	credentials := entity.User{}
+	credentials := user.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	signedToken, err := a.auth.Register(r.Context(), &credentials)
+	signedToken, err := a.auth.Register(r.Context(), credentials)
 	if err != nil {
 		if a.auth.IsDuplicateLogin(err) {
 			w.WriteHeader(http.StatusConflict)
@@ -102,7 +105,7 @@ func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 // - `401` — неверная пара логин/пароль;
 // - `500` — внутренняя ошибка сервера.
 func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
-	credentials := entity.User{}
+	credentials := user.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
