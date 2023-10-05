@@ -1,11 +1,13 @@
 package order
 
 import (
+	"strconv"
 	"time"
 )
 
 type OrderStatus string
 type OrderNumber string
+type ID uint64
 
 const (
 	StatusNew        OrderStatus = "NEW"
@@ -17,6 +19,7 @@ const (
 //go:generate easyjson order.go
 //easyjson:json
 type Order struct {
+	ID         ID
 	Number     OrderNumber `json:"number"`
 	Status     OrderStatus `json:"status"`
 	Accrual    *uint       `json:"accrual,omitempty"`
@@ -24,15 +27,24 @@ type Order struct {
 }
 
 func (n OrderNumber) IsValid() bool {
-	l := len(n)
-	digits := make([]byte, 0, l)
-	for i := 0; i < len(n); i++ {
-		digits = append(digits, byte(n[i])-48)
+	digits := make([]int, 0, len(n))
+	for _, c := range n {
+		v, err := strconv.Atoi(string(c))
+		if err != nil {
+			return false
+		}
+		digits = append(digits, v)
 	}
+	checksum := luhnChecksum(digits)
+	return (checksum % 10) == 0
+}
+
+func luhnChecksum(digits []int) int {
 	sum := 0
-	for i := 0; i < l; i++ {
-		d := digits[l-1-i]
-		if i%2 == 1 {
+	l := len(digits)
+	for i := 1; i <= l; i++ {
+		d := digits[l-i]
+		if i%2 == 0 {
 			d = d * 2
 			if d > 9 {
 				d = d - 9
@@ -40,5 +52,5 @@ func (n OrderNumber) IsValid() bool {
 		}
 		sum = sum + int(d)
 	}
-	return (sum % 10) == 0
+	return sum
 }

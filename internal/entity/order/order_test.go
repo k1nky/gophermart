@@ -9,9 +9,19 @@ func TestOrderNumber_IsValid(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "",
+			name: "Valid",
 			n:    "12345678903",
 			want: true,
+		},
+		{
+			name: "Invalid",
+			n:    "12345678901",
+			want: false,
+		},
+		{
+			name: "Incorrect symbols",
+			n:    "12345678903a",
+			want: false,
 		},
 	}
 	for _, tt := range tests {
