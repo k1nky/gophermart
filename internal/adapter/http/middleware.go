@@ -1,7 +1,14 @@
 package http
 
 import (
+	"context"
 	"net/http"
+)
+
+type contextKey int
+
+const (
+	keyUserClaims contextKey = iota
 )
 
 func AuthorizeMiddleware(auth AuthService) func(http.Handler) http.Handler {
@@ -12,7 +19,7 @@ func AuthorizeMiddleware(auth AuthService) func(http.Handler) http.Handler {
 				http.Error(w, "", http.StatusUnauthorized)
 				return
 			}
-			_, err := auth.ParseToken(token)
+			claims, err := auth.ParseToken(token)
 			if err != nil {
 				if auth.IsInvalidToken(err) {
 					http.Error(w, "", http.StatusUnauthorized)
@@ -21,7 +28,9 @@ func AuthorizeMiddleware(auth AuthService) func(http.Handler) http.Handler {
 				}
 				return
 			}
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), keyUserClaims, claims)
+			newRequest := r.WithContext(ctx)
+			next.ServeHTTP(w, newRequest)
 		})
 	}
 }
