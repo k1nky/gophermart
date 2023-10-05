@@ -36,6 +36,8 @@ func easyjson120d1ca2DecodeGithubComK1nkyGophermartInternalEntityOrder(in *jlexe
 			continue
 		}
 		switch key {
+		case "ID":
+			out.ID = ID(in.Uint64())
 		case "number":
 			out.Number = OrderNumber(in.String())
 		case "status":
@@ -69,8 +71,13 @@ func easyjson120d1ca2EncodeGithubComK1nkyGophermartInternalEntityOrder(out *jwri
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"number\":"
+		const prefix string = ",\"ID\":"
 		out.RawString(prefix[1:])
+		out.Uint64(uint64(in.ID))
+	}
+	{
+		const prefix string = ",\"number\":"
+		out.RawString(prefix)
 		out.String(string(in.Number))
 	}
 	{

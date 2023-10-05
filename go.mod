@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-resty/resty/v2 v2.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/golang/mock v1.6.0
@@ -26,6 +27,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

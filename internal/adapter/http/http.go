@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/k1nky/gophermart/internal/entity/order"
 	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
@@ -21,8 +22,14 @@ type AuthService interface {
 	ParseToken(signedToken string) (user.PrivateClaims, error)
 }
 
+type AccountService interface {
+	IsDuplicateOrder(err error) bool
+	NewOrder(ctx context.Context, u user.User, o order.Order) (string, error)
+}
+
 type Adapter struct {
-	auth AuthService
+	auth    AuthService
+	account AccountService
 }
 
 func New(ctx context.Context, address string, port int, auth AuthService) *Adapter {
@@ -35,10 +42,11 @@ func New(ctx context.Context, address string, port int, auth AuthService) *Adapt
 		r.Post("/register", a.Register)
 		r.Post("/login", a.Login)
 	})
-	r.Route("/api/user/orders", func(r chi.Router) {
-		r.Get("", nil)
-		r.Post("", a.NewOrder)
-	}).Use(AuthorizeMiddleware(a.auth))
+
+	r.With(AuthorizeMiddleware(a.auth)).Route("/api/user/orders", func(r chi.Router) {
+		r.Get("/", nil)
+		r.Post("/", a.NewOrder)
+	})
 
 	srv := &http.Server{
 		Handler:      r,
@@ -145,7 +153,16 @@ func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
 // - `422` — неверный формат номера заказа;
 // - `500` — внутренняя ошибка сервера.
 func (a *Adapter) NewOrder(w http.ResponseWriter, r *http.Request) {
-
+	claims, ok := r.Context().Value(keyUserClaims).(user.PrivateClaims)
+	if !ok {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	u := user.User{
+		ID: claims.ID,
+	}
+	o := order.Order{}
+	a.account.NewOrder(r.Context(), u, o)
 }
 
 // Получение списка загруженных номеров заказов. Хендлер доступен только авторизованному пользователю. Номера заказа в выдаче должны быть отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.
