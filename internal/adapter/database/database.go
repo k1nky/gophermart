@@ -124,6 +124,33 @@ func (a *Adapter) NewOrder(ctx context.Context, u user.User, o order.Order) (*or
 
 }
 
+func (a *Adapter) GetOrdersByFilter(ctx context.Context, filter string, args ...interface{}) ([]*order.Order, error) {
+	const query = `
+		SELECT
+			order_id, number, status, accrual, uploaded_at
+		FROM orders
+	`
+	where := fmt.Sprintf(" WHERE %s", filter)
+	rows, err := a.QueryContext(ctx, query+where, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	orders := make([]*order.Order, 0)
+	for rows.Next() {
+		o := &order.Order{}
+		if err := rows.Scan(&o.ID, &o.Number, &o.Status, &o.Accrual, &o.UploadedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}
+
 func (a *Adapter) hasUniqueViolationError(err error) bool {
 	var pgerr *pgconn.PgError
 	if errors.As(err, &pgerr) {

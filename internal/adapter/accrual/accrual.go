@@ -23,7 +23,7 @@ var (
 type orderResponse struct {
 	Order   string `json:"order"`
 	Status  string `json:"status"`
-	Accrual *uint  `json:"accraul,omitempty"`
+	Accrual *uint  `json:"accrual,omitempty"`
 }
 
 type Adapter struct {
