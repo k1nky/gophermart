@@ -57,7 +57,7 @@ func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
 	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(true)
 
 	token, err := suite.svc.Register(ctx, u)
-	suite.ErrorIs(err, ErrDuplicateLoginError)
+	suite.ErrorIs(err, user.ErrDuplicateLoginError)
 	suite.Empty(token)
 }
 
@@ -111,7 +111,7 @@ func (suite *authServiceTestSuite) TestLoginIncorrectPassword() {
 	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
 
 	token, err := suite.svc.Login(ctx, credentials)
-	suite.ErrorIs(err, ErrInvalidCredentials)
+	suite.ErrorIs(err, user.ErrInvalidCredentials)
 	suite.Empty(token)
 }
 
@@ -125,7 +125,7 @@ func (suite *authServiceTestSuite) TestLoginUserNotExists() {
 	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, nil)
 
 	token, err := suite.svc.Login(ctx, credentials)
-	suite.ErrorIs(err, ErrInvalidCredentials)
+	suite.ErrorIs(err, user.ErrInvalidCredentials)
 	suite.Empty(token)
 }
 

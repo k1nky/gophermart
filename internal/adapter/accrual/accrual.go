@@ -66,19 +66,14 @@ func (a *Adapter) FetchOrder(ctx context.Context, number order.OrderNumber) (*or
 		o := order.Order{
 			Number:  order.OrderNumber(responseData.Order),
 			Accrual: responseData.Accrual,
-		}
-		switch responseData.Status {
-		case "REGISTERED":
-			o.Status = order.StatusNew
-		default:
-			o.Status = order.OrderStatus(responseData.Status)
+			Status:  order.OrderStatus(responseData.Status),
 		}
 		return &o, nil
 	case http.StatusNoContent:
 		// заказ не зарегистрирован в системе расчета.
 		return nil, nil
 	case http.StatusTooManyRequests:
-		// TODO: TooManyRequest
+		// TODO: TooManyRequest, place retrier here
 		// превышено количество запросов к сервису.
 		return nil, nil
 	}

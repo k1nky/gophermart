@@ -14,6 +14,7 @@ const (
 	StatusProcessing OrderStatus = "PROCESSING"
 	StatusInvalid    OrderStatus = "INVALID"
 	StatusProcessed  OrderStatus = "PROCESSED"
+	StatusRegistered OrderStatus = "REGISTERED"
 )
 
 //go:generate easyjson order.go

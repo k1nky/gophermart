@@ -8,7 +8,7 @@ import (
 )
 
 type Store interface {
-	GetOrdersByFilter(ctx context.Context, filter string, args ...interface{}) ([]*order.Order, error)
+	GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus) ([]*order.Order, error)
 }
 
 type OrderAccrual interface {
@@ -37,12 +37,15 @@ func (s *Service) Process(ctx context.Context) {
 			// - `INVALID` — система расчёта вознаграждений отказала в расчёте;
 			// - `PROCESSED` — данные по заказу проверены и информация о расчёте успешно получена.
 
-			orders, err := s.store.GetOrdersByFilter(ctx, "status IN ($1, $2)", order.StatusNew, order.StatusProcessing)
+			orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing})
 			if err != nil {
 				// TODO: handle err
 			}
 			for _, o := range orders {
 				got, err := s.orderAccrual.FetchOrder(ctx, o.Number)
+				if got.Status == order.StatusRegistered {
+					got.Status = order.StatusNew
+				}
 				if err != nil {
 					// TODO: handle err
 				}

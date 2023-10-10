@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,8 +15,6 @@ import (
 )
 
 type AuthService interface {
-	IsDuplicateLogin(err error) bool
-	IsIncorrectCredentials(err error) bool
 	IsInvalidToken(err error) bool
 	Register(ctx context.Context, u user.User) (string, error)
 	Login(ctx context.Context, u user.User) (string, error)
@@ -90,7 +89,7 @@ func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	signedToken, err := a.auth.Register(r.Context(), credentials)
 	if err != nil {
-		if a.auth.IsDuplicateLogin(err) {
+		if errors.Is(err, user.ErrDuplicateLoginError) {
 			w.WriteHeader(http.StatusConflict)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -124,7 +123,7 @@ func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	signedToken, err := a.auth.Login(r.Context(), credentials)
 	if err != nil {
-		if a.auth.IsIncorrectCredentials(err) {
+		if errors.Is(err, user.ErrInvalidCredentials) {
 			w.WriteHeader(http.StatusUnauthorized)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)

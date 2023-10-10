@@ -124,14 +124,14 @@ func (a *Adapter) NewOrder(ctx context.Context, u user.User, o order.Order) (*or
 
 }
 
-func (a *Adapter) GetOrdersByFilter(ctx context.Context, filter string, args ...interface{}) ([]*order.Order, error) {
+func (a *Adapter) GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus) ([]*order.Order, error) {
 	const query = `
 		SELECT
 			order_id, number, status, accrual, uploaded_at
 		FROM orders
+		WHERE status in ($1)
 	`
-	where := fmt.Sprintf(" WHERE %s", filter)
-	rows, err := a.QueryContext(ctx, query+where, args...)
+	rows, err := a.QueryContext(ctx, query, statuses)
 	if err != nil {
 		return nil, err
 	}
