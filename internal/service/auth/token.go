@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -14,10 +13,6 @@ type Claims struct {
 	user.PrivateClaims
 }
 
-var (
-	ErrInvalidToken = errors.New("invalid token")
-)
-
 func (s *Service) GenerateToken(claims user.PrivateClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -29,7 +24,7 @@ func (s *Service) GenerateToken(claims user.PrivateClaims) (string, error) {
 	return token.SignedString(s.secret)
 }
 
-func (s *Service) ParseToken(signedToken string) (user.PrivateClaims, error) {
+func (s *Service) parseToken(signedToken string) (user.PrivateClaims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(signedToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return s.secret, nil
@@ -38,11 +33,15 @@ func (s *Service) ParseToken(signedToken string) (user.PrivateClaims, error) {
 		return user.PrivateClaims{}, err
 	}
 	if !token.Valid {
-		return user.PrivateClaims{}, fmt.Errorf("token invalid")
+		return user.PrivateClaims{}, err
 	}
 	return claims.PrivateClaims, nil
 }
 
-func (s *Service) IsInvalidToken(err error) bool {
-	return errors.Is(err, ErrInvalidToken)
+func (s *Service) Authorize(token string) (user.PrivateClaims, error) {
+	claims, err := s.parseToken(token)
+	if err != nil {
+		return claims, fmt.Errorf("auth: invalid token: %w", user.ErrUnathorized)
+	}
+	return claims, nil
 }

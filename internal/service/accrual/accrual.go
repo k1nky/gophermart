@@ -44,7 +44,7 @@ func (s *Service) Process(ctx context.Context) {
 			for _, o := range orders {
 				got, err := s.orderAccrual.FetchOrder(ctx, o.Number)
 				if got.Status == order.StatusRegistered {
-					got.Status = order.StatusNew
+					got.Status = order.StatusProcessing
 				}
 				if err != nil {
 					// TODO: handle err

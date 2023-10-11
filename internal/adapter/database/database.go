@@ -23,10 +23,6 @@ const (
 	MaxKeepaliveConnections = 10
 )
 
-var (
-	ErrUniqueViolation = errors.New("duplicate key value")
-)
-
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
@@ -93,7 +89,7 @@ func (a *Adapter) NewUser(ctx context.Context, u user.User) (*user.User, error) 
 	row := a.QueryRowContext(ctx, query, u.Login, u.Password)
 	if err := row.Err(); err != nil {
 		if a.hasUniqueViolationError(err) {
-			return nil, fmt.Errorf("%s %w", u.Login, ErrUniqueViolation)
+			return nil, fmt.Errorf("%s %w", u.Login, user.ErrDuplicateLogin)
 		}
 		return nil, err
 	}
@@ -112,7 +108,7 @@ func (a *Adapter) NewOrder(ctx context.Context, u user.User, o order.Order) (*or
 	row := a.QueryRowContext(ctx, query, u.ID, o.Number)
 	if err := row.Err(); err != nil {
 		if a.hasUniqueViolationError(err) {
-			return nil, fmt.Errorf("%s %w", o.Number, ErrUniqueViolation)
+			return nil, fmt.Errorf("%s %w", o.Number, order.ErrDuplicateOrderError)
 		}
 		return nil, err
 	}
@@ -159,8 +155,4 @@ func (a *Adapter) hasUniqueViolationError(err error) bool {
 		}
 	}
 	return false
-}
-
-func (a *Adapter) IsUniqueViolation(err error) bool {
-	return errors.Is(err, ErrUniqueViolation)
 }

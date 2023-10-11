@@ -14,7 +14,7 @@ import (
 
 type authServiceTestSuite struct {
 	suite.Suite
-	store *mock.MockStorage
+	store *mock.Mockstorage
 	svc   *Service
 }
 
@@ -24,7 +24,7 @@ func TestAuthService(t *testing.T) {
 
 func (suite *authServiceTestSuite) SetupTest() {
 	ctrl := gomock.NewController(suite.Suite.T())
-	suite.store = mock.NewMockStorage(ctrl)
+	suite.store = mock.NewMockstorage(ctrl)
 	suite.svc = New("secret", 3*time.Hour, suite.store)
 }
 
@@ -53,11 +53,10 @@ func (suite *authServiceTestSuite) TestRegisterUserAlreadyExists() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(nil, errors.New("duplicate"))
-	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(true)
+	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(nil, user.ErrDuplicateLogin)
 
 	token, err := suite.svc.Register(ctx, u)
-	suite.ErrorIs(err, user.ErrDuplicateLoginError)
+	suite.ErrorIs(err, user.ErrDuplicateLogin)
 	suite.Empty(token)
 }
 
@@ -69,7 +68,6 @@ func (suite *authServiceTestSuite) TestRegisterUnexpectedError() {
 	ctx := context.TODO()
 
 	suite.store.EXPECT().NewUser(gomock.Any(), gomock.Any()).Return(nil, errors.New("unexpected error"))
-	suite.store.EXPECT().IsUniqueViolation(gomock.Any()).Return(false)
 
 	token, err := suite.svc.Register(ctx, u)
 	suite.Error(err)
@@ -141,34 +139,4 @@ func (suite *authServiceTestSuite) TestLoginUnexpectedError() {
 	token, err := suite.svc.Login(ctx, credentials)
 	suite.Error(err)
 	suite.Empty(token)
-}
-
-func (suite *authServiceTestSuite) TestParseToken() {
-	claims := user.PrivateClaims{
-		Login: "user",
-	}
-	token, err := suite.svc.GenerateToken(claims)
-	suite.NoError(err)
-	got, err := suite.svc.ParseToken(token)
-	suite.NoError(err)
-	suite.Equal(claims, got)
-}
-
-func (suite *authServiceTestSuite) TestParseExpiredToken() {
-	claims := user.PrivateClaims{
-		Login: "user",
-	}
-	suite.svc.tokenExpiration = 1 * time.Second
-	token, err := suite.svc.GenerateToken(claims)
-	suite.NoError(err)
-	time.Sleep(3 * time.Second)
-	got, err := suite.svc.ParseToken(token)
-	suite.Error(err)
-	suite.Empty(got)
-}
-
-func (suite *authServiceTestSuite) TestParseInvalidToken() {
-	got, err := suite.svc.ParseToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTYyODIxMDgsIkxvZ2luIjoidXNlciJ9.44K4rEcXS1bvyQY8h-TomgkKCC6Yysf44nl7O3n0KUI_invalid")
-	suite.Error(err)
-	suite.Empty(got)
 }

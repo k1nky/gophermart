@@ -12,31 +12,31 @@ import (
 	user "github.com/k1nky/gophermart/internal/entity/user"
 )
 
-// MockStorage is a mock of Storage interface.
-type MockStorage struct {
+// Mockstorage is a mock of storage interface.
+type Mockstorage struct {
 	ctrl     *gomock.Controller
-	recorder *MockStorageMockRecorder
+	recorder *MockstorageMockRecorder
 }
 
-// MockStorageMockRecorder is the mock recorder for MockStorage.
-type MockStorageMockRecorder struct {
-	mock *MockStorage
+// MockstorageMockRecorder is the mock recorder for Mockstorage.
+type MockstorageMockRecorder struct {
+	mock *Mockstorage
 }
 
-// NewMockStorage creates a new mock instance.
-func NewMockStorage(ctrl *gomock.Controller) *MockStorage {
-	mock := &MockStorage{ctrl: ctrl}
-	mock.recorder = &MockStorageMockRecorder{mock}
+// NewMockstorage creates a new mock instance.
+func NewMockstorage(ctrl *gomock.Controller) *Mockstorage {
+	mock := &Mockstorage{ctrl: ctrl}
+	mock.recorder = &MockstorageMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
+func (m *Mockstorage) EXPECT() *MockstorageMockRecorder {
 	return m.recorder
 }
 
 // GetUser mocks base method.
-func (m *MockStorage) GetUser(ctx context.Context, login string) (*user.User, error) {
+func (m *Mockstorage) GetUser(ctx context.Context, login string) (*user.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", ctx, login)
 	ret0, _ := ret[0].(*user.User)
@@ -45,27 +45,13 @@ func (m *MockStorage) GetUser(ctx context.Context, login string) (*user.User, er
 }
 
 // GetUser indicates an expected call of GetUser.
-func (mr *MockStorageMockRecorder) GetUser(ctx, login interface{}) *gomock.Call {
+func (mr *MockstorageMockRecorder) GetUser(ctx, login interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockStorage)(nil).GetUser), ctx, login)
-}
-
-// IsUniqueViolation mocks base method.
-func (m *MockStorage) IsUniqueViolation(err error) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsUniqueViolation", err)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsUniqueViolation indicates an expected call of IsUniqueViolation.
-func (mr *MockStorageMockRecorder) IsUniqueViolation(err interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsUniqueViolation", reflect.TypeOf((*MockStorage)(nil).IsUniqueViolation), err)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*Mockstorage)(nil).GetUser), ctx, login)
 }
 
 // NewUser mocks base method.
-func (m *MockStorage) NewUser(ctx context.Context, u user.User) (*user.User, error) {
+func (m *Mockstorage) NewUser(ctx context.Context, u user.User) (*user.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewUser", ctx, u)
 	ret0, _ := ret[0].(*user.User)
@@ -74,7 +60,7 @@ func (m *MockStorage) NewUser(ctx context.Context, u user.User) (*user.User, err
 }
 
 // NewUser indicates an expected call of NewUser.
-func (mr *MockStorageMockRecorder) NewUser(ctx, u interface{}) *gomock.Call {
+func (mr *MockstorageMockRecorder) NewUser(ctx, u interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUser", reflect.TypeOf((*MockStorage)(nil).NewUser), ctx, u)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUser", reflect.TypeOf((*Mockstorage)(nil).NewUser), ctx, u)
 }

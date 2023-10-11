@@ -2,7 +2,10 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net/http"
+
+	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
 type contextKey int
@@ -11,7 +14,7 @@ const (
 	keyUserClaims contextKey = iota
 )
 
-func AuthorizeMiddleware(auth AuthService) func(http.Handler) http.Handler {
+func AuthorizeMiddleware(auth authService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := r.Header.Get("Authorization")
@@ -19,9 +22,9 @@ func AuthorizeMiddleware(auth AuthService) func(http.Handler) http.Handler {
 				http.Error(w, "", http.StatusUnauthorized)
 				return
 			}
-			claims, err := auth.ParseToken(token)
+			claims, err := auth.Authorize(token)
 			if err != nil {
-				if auth.IsInvalidToken(err) {
+				if errors.Is(err, user.ErrUnathorized) {
 					http.Error(w, "", http.StatusUnauthorized)
 				} else {
 					http.Error(w, "", http.StatusInternalServerError)

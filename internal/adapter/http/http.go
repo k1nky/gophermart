@@ -14,41 +14,30 @@ import (
 	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
-type AuthService interface {
-	IsInvalidToken(err error) bool
+//go:generate mockgen -source=http.go -destination=mock/auth.go -package=mock authService
+type authService interface {
 	Register(ctx context.Context, u user.User) (string, error)
 	Login(ctx context.Context, u user.User) (string, error)
-	ParseToken(signedToken string) (user.PrivateClaims, error)
+	Authorize(token string) (user.PrivateClaims, error)
 }
 
-type AccountService interface {
+type accountService interface {
 	IsDuplicateOrder(err error) bool
 	NewOrder(ctx context.Context, u user.User, o order.Order) (string, error)
 }
 
 type Adapter struct {
-	auth    AuthService
-	account AccountService
+	auth    authService
+	account accountService
 }
 
-func New(ctx context.Context, address string, port int, auth AuthService) *Adapter {
+func New(ctx context.Context, address string, port int, auth authService) *Adapter {
 	a := &Adapter{
 		auth: auth,
 	}
 
-	r := chi.NewRouter()
-	r.Route("/api/user", func(r chi.Router) {
-		r.Post("/register", a.Register)
-		r.Post("/login", a.Login)
-	})
-
-	r.With(AuthorizeMiddleware(a.auth)).Route("/api/user/orders", func(r chi.Router) {
-		r.Get("/", nil)
-		r.Post("/", a.NewOrder)
-	})
-
 	srv := &http.Server{
-		Handler:      r,
+		Handler:      a.buildRouter(),
 		Addr:         fmt.Sprintf("%s:%d", address, port),
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
@@ -62,6 +51,20 @@ func New(ctx context.Context, address string, port int, auth AuthService) *Adapt
 	}()
 
 	return a
+}
+
+func (a *Adapter) buildRouter() http.Handler {
+	r := chi.NewRouter()
+	r.Route("/api/user", func(r chi.Router) {
+		r.Post("/register", a.Register)
+		r.Post("/login", a.Login)
+	})
+
+	r.With(AuthorizeMiddleware(a.auth)).Route("/api/user/orders", func(r chi.Router) {
+		r.Get("/", nil)
+		r.Post("/", a.NewOrder)
+	})
+	return r
 }
 
 // Регистрация пользователя. Регистрация производится по паре логин/пароль. Каждый логин должен быть уникальным.
@@ -84,12 +87,16 @@ func New(ctx context.Context, address string, port int, auth AuthService) *Adapt
 func (a *Adapter) Register(w http.ResponseWriter, r *http.Request) {
 	credentials := user.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	if err := credentials.IsValid(); err != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	signedToken, err := a.auth.Register(r.Context(), credentials)
 	if err != nil {
-		if errors.Is(err, user.ErrDuplicateLoginError) {
+		if errors.Is(err, user.ErrDuplicateLogin) {
 			w.WriteHeader(http.StatusConflict)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -119,6 +126,10 @@ func (a *Adapter) Login(w http.ResponseWriter, r *http.Request) {
 	credentials := user.User{}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if err := credentials.IsValid(); err != nil {
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 	signedToken, err := a.auth.Login(r.Context(), credentials)

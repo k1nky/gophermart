@@ -29,6 +29,13 @@ func (u *User) CheckPassword(password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 }
 
+func (u *User) IsValid() error {
+	if u.Login == "" || u.Password == "" {
+		return ErrCredentialsInvalidFormat
+	}
+	return nil
+}
+
 func NewPrivateClaims(u User) PrivateClaims {
 	return PrivateClaims{
 		ID:    u.ID,
