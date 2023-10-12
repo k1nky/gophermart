@@ -37,7 +37,7 @@ func (s *Service) Register(ctx context.Context, newUser user.User) (token string
 }
 
 func (s *Service) Login(ctx context.Context, credentials user.User) (string, error) {
-	u, err := s.store.GetUser(ctx, credentials.Login)
+	u, err := s.store.GetUserByLogin(ctx, credentials.Login)
 	if err != nil {
 		return "", err
 	}

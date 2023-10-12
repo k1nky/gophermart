@@ -16,4 +16,5 @@ type authService interface {
 
 type accountService interface {
 	NewOrder(ctx context.Context, o order.Order) (*order.Order, error)
+	GetUserOrders(ctx context.Context, userID user.ID) ([]*order.Order, error)
 }

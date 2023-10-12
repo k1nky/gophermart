@@ -10,3 +10,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: praktikum
+
+  accrual:
+    build: cmd/accrual
+    image: accrual
+    restart: always
+    ports:
+      - 8081:8080

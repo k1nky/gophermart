@@ -104,6 +104,21 @@ func (m *MockaccountService) EXPECT() *MockaccountServiceMockRecorder {
 	return m.recorder
 }
 
+// GetUserOrders mocks base method.
+func (m *MockaccountService) GetUserOrders(ctx context.Context, userID user.ID) ([]*order.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserOrders", ctx, userID)
+	ret0, _ := ret[0].([]*order.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserOrders indicates an expected call of GetUserOrders.
+func (mr *MockaccountServiceMockRecorder) GetUserOrders(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserOrders", reflect.TypeOf((*MockaccountService)(nil).GetUserOrders), ctx, userID)
+}
+
 // NewOrder mocks base method.
 func (m *MockaccountService) NewOrder(ctx context.Context, o order.Order) (*order.Order, error) {
 	m.ctrl.T.Helper()

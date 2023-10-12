@@ -87,7 +87,7 @@ func (suite *authServiceTestSuite) TestLoginCorrectCredentials() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
+	suite.store.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(&u, nil)
 
 	token, err := suite.svc.Login(ctx, credentials)
 	suite.NoError(err)
@@ -106,7 +106,7 @@ func (suite *authServiceTestSuite) TestLoginIncorrectPassword() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(&u, nil)
+	suite.store.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(&u, nil)
 
 	token, err := suite.svc.Login(ctx, credentials)
 	suite.ErrorIs(err, user.ErrInvalidCredentials)
@@ -120,7 +120,7 @@ func (suite *authServiceTestSuite) TestLoginUserNotExists() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, nil)
+	suite.store.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(nil, nil)
 
 	token, err := suite.svc.Login(ctx, credentials)
 	suite.ErrorIs(err, user.ErrInvalidCredentials)
@@ -134,7 +134,7 @@ func (suite *authServiceTestSuite) TestLoginUnexpectedError() {
 	}
 	ctx := context.TODO()
 
-	suite.store.EXPECT().GetUser(gomock.Any(), "user").Return(nil, errors.New("unexpected error"))
+	suite.store.EXPECT().GetUserByLogin(gomock.Any(), "user").Return(nil, errors.New("unexpected error"))
 
 	token, err := suite.svc.Login(ctx, credentials)
 	suite.Error(err)

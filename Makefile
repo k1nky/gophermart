@@ -28,10 +28,11 @@ run:
 rundb:
 	docker compose up -d
 
+	
 racetest:
 	go test -v -race ./...
 
-autotest:
+autotest: build
 	bin/gophermarttest \
 		-test.v -test.run=^TestGophermart$$ \
 		-gophermart-binary-path=cmd/gophermart/gophermart \
@@ -40,5 +41,5 @@ autotest:
 		-gophermart-database-uri="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable" \
 		-accrual-binary-path=cmd/accrual/accrual_linux_amd64 \
 		-accrual-host=localhost \
-		-accrual-port=8081 \
+		-accrual-port=8082 \
 		-accrual-database-uri="postgresql://postgres:postgres@postgres/praktikum?sslmode=disable"

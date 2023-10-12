@@ -35,19 +35,19 @@ func (m *Mockstorage) EXPECT() *MockstorageMockRecorder {
 	return m.recorder
 }
 
-// GetUser mocks base method.
-func (m *Mockstorage) GetUser(ctx context.Context, login string) (*user.User, error) {
+// GetUserByLogin mocks base method.
+func (m *Mockstorage) GetUserByLogin(ctx context.Context, login string) (*user.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUser", ctx, login)
+	ret := m.ctrl.Call(m, "GetUserByLogin", ctx, login)
 	ret0, _ := ret[0].(*user.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetUser indicates an expected call of GetUser.
-func (mr *MockstorageMockRecorder) GetUser(ctx, login interface{}) *gomock.Call {
+// GetUserByLogin indicates an expected call of GetUserByLogin.
+func (mr *MockstorageMockRecorder) GetUserByLogin(ctx, login interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*Mockstorage)(nil).GetUser), ctx, login)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByLogin", reflect.TypeOf((*Mockstorage)(nil).GetUserByLogin), ctx, login)
 }
 
 // NewUser mocks base method.

@@ -21,9 +21,9 @@ var (
 )
 
 type orderResponse struct {
-	Order   string `json:"order"`
-	Status  string `json:"status"`
-	Accrual *uint  `json:"accrual,omitempty"`
+	Order   string   `json:"order"`
+	Status  string   `json:"status"`
+	Accrual *float32 `json:"accrual,omitempty"`
 }
 
 type Adapter struct {
@@ -48,7 +48,7 @@ func (a *Adapter) newRequest() *resty.Request {
 func (a *Adapter) FetchOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
 	req := a.newRequest()
 	// Получение информации о расчёте начислений баллов лояльности.
-	url, err := url.JoinPath(a.url, "/api/order", string(number))
+	url, err := url.JoinPath(a.url, "/api/orders", string(number))
 	if err != nil {
 		return nil, err
 	}

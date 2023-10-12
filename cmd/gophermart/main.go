@@ -7,9 +7,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/k1nky/gophermart/internal/adapter/accrual"
 	"github.com/k1nky/gophermart/internal/adapter/database"
 	"github.com/k1nky/gophermart/internal/adapter/http"
 	"github.com/k1nky/gophermart/internal/service/account"
+	accural "github.com/k1nky/gophermart/internal/service/accrual"
 	"github.com/k1nky/gophermart/internal/service/auth"
 )
 
@@ -21,7 +23,11 @@ func main() {
 	}
 	authService := auth.New("secret", 3*time.Hour, store)
 	account := account.New(store)
+	accrualClient := accrual.New("http://localhost:8081")
+	accrual := accural.New(store, accrualClient)
+	accrual.Process(ctx)
 	http.New(ctx, "", 8080, authService, account)
 
 	<-ctx.Done()
+	time.Sleep(1 * time.Second)
 }

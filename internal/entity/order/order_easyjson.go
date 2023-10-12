@@ -48,9 +48,9 @@ func easyjson120d1ca2DecodeGithubComK1nkyGophermartInternalEntityOrder(in *jlexe
 				out.Accrual = nil
 			} else {
 				if out.Accrual == nil {
-					out.Accrual = new(uint)
+					out.Accrual = new(float32)
 				}
-				*out.Accrual = uint(in.Uint())
+				*out.Accrual = float32(in.Float32())
 			}
 		case "uploaded_at":
 			if data := in.Raw(); in.Ok() {
@@ -88,7 +88,7 @@ func easyjson120d1ca2EncodeGithubComK1nkyGophermartInternalEntityOrder(out *jwri
 	if in.Accrual != nil {
 		const prefix string = ",\"accrual\":"
 		out.RawString(prefix)
-		out.Uint(uint(*in.Accrual))
+		out.Float32(float32(*in.Accrual))
 	}
 	{
 		const prefix string = ",\"uploaded_at\":"
