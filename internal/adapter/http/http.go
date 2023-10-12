@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,26 +15,15 @@ import (
 	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
-//go:generate mockgen -source=http.go -destination=mock/auth.go -package=mock authService
-type authService interface {
-	Register(ctx context.Context, u user.User) (string, error)
-	Login(ctx context.Context, u user.User) (string, error)
-	Authorize(token string) (user.PrivateClaims, error)
-}
-
-type accountService interface {
-	IsDuplicateOrder(err error) bool
-	NewOrder(ctx context.Context, u user.User, o order.Order) (string, error)
-}
-
 type Adapter struct {
 	auth    authService
 	account accountService
 }
 
-func New(ctx context.Context, address string, port int, auth authService) *Adapter {
+func New(ctx context.Context, address string, port int, auth authService, account accountService) *Adapter {
 	a := &Adapter{
-		auth: auth,
+		auth:    auth,
+		account: account,
 	}
 
 	srv := &http.Server{
@@ -168,11 +158,30 @@ func (a *Adapter) NewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-	u := user.User{
-		ID: claims.ID,
+	newOrder := order.Order{
+		UserID: claims.ID,
 	}
-	o := order.Order{}
-	a.account.NewOrder(r.Context(), u, o)
+	buf := bytes.NewBuffer(nil)
+	if _, err := buf.ReadFrom(r.Body); err != nil {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+	newOrder.Number = order.OrderNumber(buf.String())
+	if !newOrder.Number.IsValid() {
+		http.Error(w, "", http.StatusUnprocessableEntity)
+		return
+	}
+	if _, err := a.account.NewOrder(r.Context(), newOrder); err != nil {
+		if errors.Is(err, order.ErrDuplicateOrder) {
+			http.Error(w, "", http.StatusOK)
+		} else if errors.Is(err, order.ErrOrderBelongsToAnotherUser) {
+			http.Error(w, "", http.StatusConflict)
+		} else {
+			http.Error(w, "", http.StatusInternalServerError)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // Получение списка загруженных номеров заказов. Хендлер доступен только авторизованному пользователю. Номера заказа в выдаче должны быть отсортированы по времени загрузки от самых старых к самым новым. Формат даты — RFC3339.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/k1nky/gophermart/internal/adapter/database"
 	"github.com/k1nky/gophermart/internal/adapter/http"
+	"github.com/k1nky/gophermart/internal/service/account"
 	"github.com/k1nky/gophermart/internal/service/auth"
 )
 
@@ -19,7 +20,8 @@ func main() {
 		panic(err.Error())
 	}
 	authService := auth.New("secret", 3*time.Hour, store)
-	http.New(ctx, "", 8080, authService)
+	account := account.New(store)
+	http.New(ctx, "", 8080, authService, account)
 
 	<-ctx.Done()
 }

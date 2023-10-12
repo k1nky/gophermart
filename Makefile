@@ -31,7 +31,7 @@ rundb:
 racetest:
 	go test -v -race ./...
 
-autotest: build
+autotest:
 	bin/gophermarttest \
 		-test.v -test.run=^TestGophermart$$ \
 		-gophermart-binary-path=cmd/gophermart/gophermart \

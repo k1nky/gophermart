@@ -3,6 +3,8 @@ package order
 import (
 	"strconv"
 	"time"
+
+	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
 type OrderStatus string
@@ -25,6 +27,7 @@ type Order struct {
 	Status     OrderStatus `json:"status"`
 	Accrual    *uint       `json:"accrual,omitempty"`
 	UploadedAt time.Time   `json:"uploaded_at"`
+	UserID     user.ID     `json:"-"`
 }
 
 func (n OrderNumber) IsValid() bool {

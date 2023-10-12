@@ -3,5 +3,7 @@ package order
 import "errors"
 
 var (
-	ErrDuplicateOrderError = errors.New("order already exists")
+	ErrDuplicateOrder            = errors.New("order already exists")
+	ErrInvalidOrderNumberFormat  = errors.New("invalid order number format")
+	ErrOrderBelongsToAnotherUser = errors.New("order belongs to another user")
 )

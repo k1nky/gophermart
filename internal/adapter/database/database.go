@@ -99,16 +99,16 @@ func (a *Adapter) NewUser(ctx context.Context, u user.User) (*user.User, error) 
 	return &u, nil
 }
 
-func (a *Adapter) NewOrder(ctx context.Context, u user.User, o order.Order) (*order.Order, error) {
+func (a *Adapter) NewOrder(ctx context.Context, o order.Order) (*order.Order, error) {
 	const query = `
 		INSERT INTO orders AS o (user_id, number, status, uploaded_at)
 		VALUES ($1, $2, 'NEW', NOW())
 		RETURNING o.order_id, o.uploaded_at
 	`
-	row := a.QueryRowContext(ctx, query, u.ID, o.Number)
+	row := a.QueryRowContext(ctx, query, o.UserID, o.Number)
 	if err := row.Err(); err != nil {
 		if a.hasUniqueViolationError(err) {
-			return nil, fmt.Errorf("%s %w", o.Number, order.ErrDuplicateOrderError)
+			return nil, fmt.Errorf("%s %w", o.Number, order.ErrDuplicateOrder)
 		}
 		return nil, err
 	}
@@ -118,6 +118,27 @@ func (a *Adapter) NewOrder(ctx context.Context, u user.User, o order.Order) (*or
 	o.Status = order.StatusNew
 	return &o, nil
 
+}
+
+func (a *Adapter) GetOrderByNumber(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
+	const query = `
+		SELECT
+			order_id, number, status, accrual, uploaded_at, user_id
+		FROM orders
+		WHERE number = $1
+	`
+	row := a.QueryRowContext(ctx, query, number)
+	if err := row.Err(); err != nil {
+		return nil, err
+	}
+	o := &order.Order{}
+	if err := row.Scan(&o.ID, &o.Number, &o.Status, &o.Accrual, &o.UploadedAt, &o.UserID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return o, nil
 }
 
 func (a *Adapter) GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus) ([]*order.Order, error) {

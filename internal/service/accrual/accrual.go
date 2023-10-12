@@ -40,6 +40,7 @@ func (s *Service) Process(ctx context.Context) {
 			orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing})
 			if err != nil {
 				// TODO: handle err
+				continue
 			}
 			for _, o := range orders {
 				got, err := s.orderAccrual.FetchOrder(ctx, o.Number)
@@ -48,6 +49,7 @@ func (s *Service) Process(ctx context.Context) {
 				}
 				if err != nil {
 					// TODO: handle err
+					continue
 				}
 				if o.Status != got.Status {
 					o.Status = got.Status
