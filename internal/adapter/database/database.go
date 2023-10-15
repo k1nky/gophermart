@@ -18,22 +18,11 @@ const (
 	MaxKeepaliveConnections = 10
 )
 
-type contextKey int
-
-const (
-	keyTransaction contextKey = iota
-)
-
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
 type Adapter struct {
 	*sql.DB
-}
-
-type transaction interface {
-	Rollback() error
-	Commit() error
 }
 
 func New() *Adapter {

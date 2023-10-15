@@ -11,6 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	order "github.com/k1nky/gophermart/internal/entity/order"
 	user "github.com/k1nky/gophermart/internal/entity/user"
+	withdraw "github.com/k1nky/gophermart/internal/entity/withdraw"
 )
 
 // Mockstorage is a mock of storage interface.
@@ -34,6 +35,21 @@ func NewMockstorage(ctrl *gomock.Controller) *Mockstorage {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Mockstorage) EXPECT() *MockstorageMockRecorder {
 	return m.recorder
+}
+
+// GetBalanceByUser mocks base method.
+func (m *Mockstorage) GetBalanceByUser(ctx context.Context, userID user.ID) (user.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBalanceByUser", ctx, userID)
+	ret0, _ := ret[0].(user.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBalanceByUser indicates an expected call of GetBalanceByUser.
+func (mr *MockstorageMockRecorder) GetBalanceByUser(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalanceByUser", reflect.TypeOf((*Mockstorage)(nil).GetBalanceByUser), ctx, userID)
 }
 
 // GetOrderByNumber mocks base method.
@@ -66,6 +82,21 @@ func (mr *MockstorageMockRecorder) GetOrdersByUserID(ctx, userID interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*Mockstorage)(nil).GetOrdersByUserID), ctx, userID)
 }
 
+// GetWithdrawalsByUserID mocks base method.
+func (m *Mockstorage) GetWithdrawalsByUserID(ctx context.Context, userID user.ID) ([]*withdraw.Withdraw, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWithdrawalsByUserID", ctx, userID)
+	ret0, _ := ret[0].([]*withdraw.Withdraw)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetWithdrawalsByUserID indicates an expected call of GetWithdrawalsByUserID.
+func (mr *MockstorageMockRecorder) GetWithdrawalsByUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByUserID", reflect.TypeOf((*Mockstorage)(nil).GetWithdrawalsByUserID), ctx, userID)
+}
+
 // NewOrder mocks base method.
 func (m *Mockstorage) NewOrder(ctx context.Context, newOrder order.Order) (*order.Order, error) {
 	m.ctrl.T.Helper()
@@ -79,4 +110,19 @@ func (m *Mockstorage) NewOrder(ctx context.Context, newOrder order.Order) (*orde
 func (mr *MockstorageMockRecorder) NewOrder(ctx, newOrder interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewOrder", reflect.TypeOf((*Mockstorage)(nil).NewOrder), ctx, newOrder)
+}
+
+// NewWithdraw mocks base method.
+func (m *Mockstorage) NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdraw.Withdraw, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewWithdraw", ctx, w)
+	ret0, _ := ret[0].(*withdraw.Withdraw)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewWithdraw indicates an expected call of NewWithdraw.
+func (mr *MockstorageMockRecorder) NewWithdraw(ctx, w interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewWithdraw", reflect.TypeOf((*Mockstorage)(nil).NewWithdraw), ctx, w)
 }

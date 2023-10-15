@@ -17,6 +17,11 @@ type PrivateClaims struct {
 	Login string
 }
 
+type Balance struct {
+	Current   float32 `json:"current"`
+	Withdrawn float32 `json:"withdrawn"`
+}
+
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 15)
 	if err != nil {

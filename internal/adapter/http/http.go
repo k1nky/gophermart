@@ -44,11 +44,12 @@ func (a *Adapter) buildRouter() http.Handler {
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.Register)
 		r.Post("/login", a.Login)
-	})
-
-	r.With(AuthorizeMiddleware(a.auth)).Route("/api/user/orders", func(r chi.Router) {
-		r.Get("/", a.GetOrder)
-		r.Post("/", a.NewOrder)
+		r.With(AuthorizeMiddleware(a.auth)).Get("/balance", a.GetBalance)
+		r.With(AuthorizeMiddleware(a.auth)).Get("/orders", a.GetOrder)
+		r.With(AuthorizeMiddleware(a.auth)).Post("/orders", a.NewOrder)
+		r.With(AuthorizeMiddleware(a.auth)).Get("/balance/withdrawals", a.GetWithdrawals)
+		r.With(AuthorizeMiddleware(a.auth)).Get("/withdrawals", a.GetWithdrawals)
+		r.With(AuthorizeMiddleware(a.auth)).Post("/balance/withdraw", a.NewWithdraw)
 	})
 	return r
 }
