@@ -27,6 +27,7 @@ type Order struct {
 	Status     OrderStatus `json:"status"`
 	Accrual    *float32    `json:"accrual,omitempty"`
 	UploadedAt time.Time   `json:"uploaded_at"`
+	UpdatedAt  time.Time   `json:"-"`
 	UserID     user.ID     `json:"-"`
 }
 

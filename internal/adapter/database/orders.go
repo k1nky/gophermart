@@ -9,7 +9,8 @@ import (
 )
 
 func (a *Adapter) selectOrders(ctx context.Context, where string, limit uint, args ...interface{}) ([]*order.Order, error) {
-	query := fmt.Sprintf(`SELECT order_id, number, status, accrual, uploaded_at, user_id FROM orders WHERE %s`, where)
+	// TODO: join on transactions
+	query := fmt.Sprintf(`SELECT order_id, number, status, accrual, uploaded_at, user_id, updated_at FROM orders WHERE %s`, where)
 	if limit > 0 {
 		query = query + fmt.Sprintf(" LIMIT %d", limit)
 	}
@@ -21,7 +22,7 @@ func (a *Adapter) selectOrders(ctx context.Context, where string, limit uint, ar
 	defer rows.Close()
 	for rows.Next() {
 		o := &order.Order{}
-		if err := rows.Scan(&o.ID, &o.Number, &o.Status, &o.Accrual, &o.UploadedAt, &o.UserID); err != nil {
+		if err := rows.Scan(&o.ID, &o.Number, &o.Status, &o.Accrual, &o.UploadedAt, &o.UserID, &o.UpdatedAt); err != nil {
 			return orders, err
 		}
 		orders = append(orders, o)
@@ -62,8 +63,8 @@ func (a *Adapter) GetOrdersByUserID(ctx context.Context, userID user.ID) ([]*ord
 
 func (a *Adapter) NewOrder(ctx context.Context, o order.Order) (*order.Order, error) {
 	const query = `
-		INSERT INTO orders AS o (user_id, number, status, uploaded_at)
-		VALUES ($1, $2, 'NEW', NOW())
+		INSERT INTO orders AS o (user_id, number, status)
+		VALUES ($1, $2, 'NEW')
 		RETURNING o.order_id, o.uploaded_at
 	`
 	row := a.QueryRowContext(ctx, query, o.UserID, o.Number)
@@ -82,13 +83,32 @@ func (a *Adapter) NewOrder(ctx context.Context, o order.Order) (*order.Order, er
 }
 
 func (a *Adapter) UpdateOrder(ctx context.Context, o order.Order) error {
-	const query = `
+	const updateOrderQuery = `
 		UPDATE orders 
-		SET status = $1, accrual = $2
-		WHERE number = $3
+		SET status = $1
+		WHERE order_id = $2
 	`
-	if _, err := a.ExecContext(ctx, query, o.Status, o.Accrual, o.Number); err != nil {
+	tx, err := a.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	return nil
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, updateOrderQuery, o.Status, o.ID); err != nil {
+		return err
+	}
+	if o.Accrual != nil {
+		const transactionQuery = `
+			INSERT INTO transactions(source_id, balance, amount, normal)
+			VALUES ($1, (SELECT balance FROM transactions WHERE transaction_id=(SELECT MAX(transaction_id) FROM transactions WHERE user_id=$3)) + $2, $2, 1)
+		`
+	}
+	err = tx.Commit()
+	return err
 }
+
+// func (a *Adapter) UpdateBalance(ctx context.Context, userID user.ID) error {
+// 	const query = `
+// 	insert into balance (user_id, value, updated_at) values(1, (select (select sum(accrual) as s from orders where user_id=1 and updated_at > b.updated_at) - (select sum(sum) s from withdrawals where user_id=1 and processed_at is null) from balance b where user_id=1), NOW()) on conflict on constraint balance_user_i
+// 	d_key do update set value = excluded.value;
+// 	`
+// }
