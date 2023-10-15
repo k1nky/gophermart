@@ -14,9 +14,9 @@ func (s *Service) NewOrder(ctx context.Context, newOrder order.Order) (*order.Or
 	}
 	if o != nil {
 		if o.UserID != newOrder.UserID {
-			return nil, order.ErrOrderBelongsToAnotherUser
+			return nil, order.ErrBelongsToAnotherUser
 		}
-		return nil, order.ErrDuplicateOrder
+		return nil, order.ErrDuplicated
 	}
 	o, err = s.store.NewOrder(ctx, newOrder)
 	return o, err

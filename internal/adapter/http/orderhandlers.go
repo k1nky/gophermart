@@ -46,9 +46,9 @@ func (a *Adapter) NewOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := a.account.NewOrder(r.Context(), newOrder); err != nil {
-		if errors.Is(err, order.ErrDuplicateOrder) {
+		if errors.Is(err, order.ErrDuplicated) {
 			http.Error(w, "", http.StatusOK)
-		} else if errors.Is(err, order.ErrOrderBelongsToAnotherUser) {
+		} else if errors.Is(err, order.ErrBelongsToAnotherUser) {
 			http.Error(w, "", http.StatusConflict)
 		} else {
 			http.Error(w, "", http.StatusInternalServerError)

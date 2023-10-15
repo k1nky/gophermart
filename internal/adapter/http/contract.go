@@ -5,6 +5,7 @@ import (
 
 	"github.com/k1nky/gophermart/internal/entity/order"
 	"github.com/k1nky/gophermart/internal/entity/user"
+	"github.com/k1nky/gophermart/internal/entity/withdraw"
 )
 
 //go:generate mockgen -source=contract.go -destination=mock/auth.go -package=mock authService
@@ -17,4 +18,7 @@ type authService interface {
 type accountService interface {
 	NewOrder(ctx context.Context, o order.Order) (*order.Order, error)
 	GetUserOrders(ctx context.Context, userID user.ID) ([]*order.Order, error)
+	GetUserBalance(ctx context.Context, userID user.ID) (user.Balance, error)
+	GetUserWithdrawals(ctx context.Context, userID user.ID) ([]*withdraw.Withdraw, error)
+	NewWithdraw(ctx context.Context, w withdraw.Withdraw) error
 }
