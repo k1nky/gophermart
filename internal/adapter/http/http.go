@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -16,7 +15,7 @@ type Adapter struct {
 	account accountService
 }
 
-func New(ctx context.Context, address string, port int, auth authService, account accountService) *Adapter {
+func New(ctx context.Context, listen string, auth authService, account accountService) *Adapter {
 	a := &Adapter{
 		auth:    auth,
 		account: account,
@@ -24,7 +23,7 @@ func New(ctx context.Context, address string, port int, auth authService, accoun
 
 	srv := &http.Server{
 		Handler:      a.buildRouter(),
-		Addr:         fmt.Sprintf("%s:%d", address, port),
+		Addr:         listen,
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
 	}
@@ -47,10 +46,7 @@ func (a *Adapter) buildRouter() http.Handler {
 		r.With(AuthorizeMiddleware(a.auth)).Get("/balance", a.GetBalance)
 		r.With(AuthorizeMiddleware(a.auth)).Get("/orders", a.GetOrder)
 		r.With(AuthorizeMiddleware(a.auth)).Post("/orders", a.NewOrder)
-		// TODO: NMI
-		// в ТЗ запрос на списание через /api/user/balance/withdrawals
-		// в autotest сначала вызывается /api/user/balance/withdrawals потом /api/user/withdrawals
-		r.With(AuthorizeMiddleware(a.auth)).Get("/balance/withdrawals", a.GetWithdrawals)
+		// r.With(AuthorizeMiddleware(a.auth)).Get("/balance/withdrawals", a.GetWithdrawals)
 		r.With(AuthorizeMiddleware(a.auth)).Get("/withdrawals", a.GetWithdrawals)
 		r.With(AuthorizeMiddleware(a.auth)).Post("/balance/withdraw", a.NewWithdraw)
 	})
