@@ -95,14 +95,19 @@ func (a *Adapter) NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdr
 
 	// добавляем новую транзакцию на списание
 	const newTransactionQuery = `
-		INSERT INTO transactions(user_id, source_id, balance, source_type)
-		VALUES (
-			$1, $2, (
-				SELECT coalesce(sum(balance), 0) 
-				FROM transactions 
-				WHERE transaction_id=(
-					SELECT MAX(transaction_id) FROM transactions WHERE user_id=$1)
-				) - $3, 'WITHDRAW'
+		WITH user_balance AS (
+			SELECT COALESCE(SUM(user_transaction_seq), 0) seq, COALESCE(SUM(balance), 0) balance FROM transactions WHERE user_id = $1 ORDER BY seq DESC LIMIT 1
+		)
+		INSERT INTO transactions(
+			user_id,
+			user_transaction_seq,
+			source_id, source_type,
+			balance
+		) VALUES (
+			$1,
+			(SELECT seq FROM user_balance) + 1,
+			$2, 'WITHDRAW',
+			(SELECT balance FROM user_balance) - $3
 		)
 		RETURNING balance
 	`

@@ -30,6 +30,7 @@ func New() *Adapter {
 	return &Adapter{}
 }
 
+// Открывает новое подключение к базе
 func (a *Adapter) Open(ctx context.Context, dsn string) (err error) {
 	if a.DB, err = sql.Open("pgx", dsn); err != nil {
 		return
@@ -38,6 +39,7 @@ func (a *Adapter) Open(ctx context.Context, dsn string) (err error) {
 	a.DB.SetMaxOpenConns(MaxKeepaliveConnections)
 	err = a.Initialize(dsn)
 	if err == nil {
+		// закрывает соединение при отмене контекста
 		go func() {
 			<-ctx.Done()
 			a.Close()
@@ -46,6 +48,7 @@ func (a *Adapter) Open(ctx context.Context, dsn string) (err error) {
 	return err
 }
 
+// Применяет миграции
 func (a *Adapter) Initialize(dsn string) error {
 	source, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
@@ -56,6 +59,7 @@ func (a *Adapter) Initialize(dsn string) error {
 		return err
 	}
 	err = m.Up()
+	// отсутствие изменений при миграции не считаем ошибкой
 	if errors.Is(err, migrate.ErrNoChange) {
 		return nil
 	}
@@ -72,6 +76,7 @@ func (a *Adapter) hasUniqueViolationError(err error) bool {
 	return false
 }
 
+// Закрывает подключение к базе
 func (a *Adapter) Close() error {
 	return a.DB.Close()
 }

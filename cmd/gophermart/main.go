@@ -24,7 +24,7 @@ func main() {
 	}
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	store := database.New()
-	if err := store.Open(cfg.DarabaseURI); err != nil {
+	if err := store.Open(ctx, cfg.DarabaseURI); err != nil {
 		panic(err.Error())
 	}
 	authService := auth.New("secret", 3*time.Hour, store)
