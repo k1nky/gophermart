@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"errors"
@@ -29,13 +30,20 @@ func New() *Adapter {
 	return &Adapter{}
 }
 
-func (a *Adapter) Open(dsn string) (err error) {
+func (a *Adapter) Open(ctx context.Context, dsn string) (err error) {
 	if a.DB, err = sql.Open("pgx", dsn); err != nil {
 		return
 	}
 	a.DB.SetMaxIdleConns(MaxKeepaliveConnections)
 	a.DB.SetMaxOpenConns(MaxKeepaliveConnections)
-	return a.Initialize(dsn)
+	err = a.Initialize(dsn)
+	if err == nil {
+		go func() {
+			<-ctx.Done()
+			a.Close()
+		}()
+	}
+	return err
 }
 
 func (a *Adapter) Initialize(dsn string) error {
@@ -62,4 +70,8 @@ func (a *Adapter) hasUniqueViolationError(err error) bool {
 		}
 	}
 	return false
+}
+
+func (a *Adapter) Close() error {
+	return a.DB.Close()
 }
