@@ -34,7 +34,7 @@ func (suite *adapterTestSuite) SetupTest() {
 }
 
 func shouldSkipDBTest(t *testing.T) bool {
-	return false
+	// return false
 	if len(os.Getenv("TEST_DB_READY")) == 0 {
 		t.Skip()
 		return true
