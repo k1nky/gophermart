@@ -46,7 +46,7 @@ func (s *Service) getNewOrders(ctx context.Context) <-chan *order.Order {
 				orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing})
 				s.log.Debugf("accrual: got %d new orders", len(orders))
 				if err != nil {
-					// TODO: handle error
+					s.log.Errorf("accrual: %v", err)
 					continue
 				}
 				for _, o := range orders {
