@@ -35,23 +35,24 @@ func (a *NetAddress) Type() string {
 
 // Config конфигурация агента
 type Config struct {
-	// адрес и порт запуска сервиса: переменная окружения ОС `RUN_ADDRESS` или флаг `-a`
+	// адрес и порт сервиса: переменная окружения ОС `RUN_ADDRESS` или флаг `-a`
 	RunAddress NetAddress `env:"RUN_ADDRESS"`
 	// адрес подключения к базе данных: переменная окружения ОС `DATABASE_URI` или флаг `-d`
 	DarabaseURI string `env:"DATABASE_URI"`
 	// адрес системы расчёта начислений: переменная окружения ОС `ACCRUAL_SYSTEM_ADDRESS` или флаг `-r`
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
-	LogLevel             string `env:"LOG_LEVEL"`
+	// уровень логирования: переменная окружения ОС `LOG_LEVEL` или флаг `-l`
+	LogLevel string `env:"LOG_LEVEL"`
 }
 
-func parseConfigFromCmd(c *Config) error {
+func parseFromCmd(c *Config) error {
 	cmd := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 	runAddress := NetAddress("localhost:8080")
 	cmd.VarP(&runAddress, "run-address", "a", "адрес и порт запуска сервиса")
-	accrualSystemAddress := cmd.StringP("accrual-address", "r", "http://localhost:8081", "адрес системы расчёта начислений")
+	accrualSystemAddress := cmd.StringP("accrual-address", "r", "http://accrual", "адрес системы расчёта начислений")
 	databaseURI := cmd.StringP("database-uri", "d", "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable", "адрес подключения к базе данных")
-	// logLevel := cmd.StringP("log-level", "", "info", "уровень логирования")
+	logLevel := cmd.StringP("log-level", "l", "info", "уровень логирования")
 
 	if err := cmd.Parse(os.Args[1:]); err != nil {
 		return err
@@ -61,11 +62,12 @@ func parseConfigFromCmd(c *Config) error {
 		RunAddress:           runAddress,
 		AccrualSystemAddress: *accrualSystemAddress,
 		DarabaseURI:          *databaseURI,
+		LogLevel:             *logLevel,
 	}
 	return nil
 }
 
-func parseConfigFromEnv(c *Config) error {
+func parseFromEnv(c *Config) error {
 	if err := env.Parse(c); err != nil {
 		return err
 	}
@@ -77,11 +79,14 @@ func parseConfigFromEnv(c *Config) error {
 	return nil
 }
 
-func ParseConfig(c *Config) error {
-	if err := parseConfigFromCmd(c); err != nil {
+// Parse разбирает настройки из аргументов командной строки
+// и переменных окружения. Переменные окружения имеют более высокий
+// приоритет, чем аргументы.
+func Parse(c *Config) error {
+	if err := parseFromCmd(c); err != nil {
 		return err
 	}
-	if err := parseConfigFromEnv(c); err != nil {
+	if err := parseFromEnv(c); err != nil {
 		return err
 	}
 	return nil

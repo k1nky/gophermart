@@ -20,13 +20,22 @@ import (
 func main() {
 
 	cfg := config.Config{}
-	if err := config.ParseConfig(&cfg); err != nil {
+	if err := config.Parse(&cfg); err != nil {
 		panic(err)
 	}
 	log := logger.New()
 	log.SetLevel("DEBUG")
 
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
+	run(ctx, cfg, log)
+
+	<-ctx.Done()
+	time.Sleep(1 * time.Second)
+}
+
+func run(ctx context.Context, cfg config.Config, log *logger.Logger) {
+
 	store := database.New()
 	if err := store.Open(ctx, cfg.DarabaseURI); err != nil {
 		panic(err.Error())
@@ -38,6 +47,4 @@ func main() {
 	accrual.Process(ctx)
 	http.New(ctx, string(cfg.RunAddress), authService, account)
 
-	<-ctx.Done()
-	time.Sleep(1 * time.Second)
 }
