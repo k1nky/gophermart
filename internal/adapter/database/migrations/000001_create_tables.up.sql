@@ -53,7 +53,6 @@ CREATE TABLE IF NOT EXISTS transactions (
    transaction_id SERIAL PRIMARY KEY,
    user_id INT NOT NULL,
    -- последовательный номер транзакции в рамках одного пользователя
-   -- 
    user_transaction_seq INT NOT NULL,
    -- источник транзакции
    source_id INT NOT NULL,

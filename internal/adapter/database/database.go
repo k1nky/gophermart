@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	MaxKeepaliveConnections = 10
+	DefMaxKeepaliveConnections = 10
 )
 
 //go:embed migrations/*.sql
@@ -35,8 +35,8 @@ func (a *Adapter) Open(ctx context.Context, dsn string) (err error) {
 	if a.DB, err = sql.Open("pgx", dsn); err != nil {
 		return
 	}
-	a.DB.SetMaxIdleConns(MaxKeepaliveConnections)
-	a.DB.SetMaxOpenConns(MaxKeepaliveConnections)
+	a.DB.SetMaxIdleConns(DefMaxKeepaliveConnections)
+	a.DB.SetMaxOpenConns(DefMaxKeepaliveConnections)
 	err = a.Initialize(dsn)
 	if err == nil {
 		// закрывает соединение при отмене контекста

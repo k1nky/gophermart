@@ -23,6 +23,6 @@ func (s *Service) NewOrder(ctx context.Context, newOrder order.Order) (*order.Or
 }
 
 func (s *Service) GetUserOrders(ctx context.Context, userID user.ID) ([]*order.Order, error) {
-	orders, err := s.store.GetOrdersByUserID(ctx, userID)
+	orders, err := s.store.GetOrdersByUserID(ctx, userID, DefMaxRows)
 	return orders, err
 }

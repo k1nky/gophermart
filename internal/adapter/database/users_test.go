@@ -4,9 +4,35 @@ import (
 	"context"
 
 	"github.com/k1nky/gophermart/internal/entity/user"
+	"github.com/stretchr/testify/suite"
 )
 
-func (suite *adapterTestSuite) TestNewUser() {
+type usersTestSuite struct {
+	suite.Suite
+	a *Adapter
+}
+
+func (suite *usersTestSuite) SetupTest() {
+	if shouldSkipDBTest(suite.T()) {
+		return
+	}
+	var err error
+	if suite.a, err = openTestDB(); err != nil {
+		suite.FailNow(err.Error())
+		return
+	}
+	if _, err := suite.a.Exec(`
+		DELETE FROM users CASCADE;
+		INSERT INTO users(user_id, login, password) 
+			VALUES (1, 'u1', 'p1'), 
+					(2, 'u2', 'p2');
+	`); err != nil {
+		suite.FailNow(err.Error())
+	}
+
+}
+
+func (suite *usersTestSuite) TestNewUser() {
 	u := user.User{
 		Login:    "test_u",
 		Password: "test_p",
@@ -18,7 +44,7 @@ func (suite *adapterTestSuite) TestNewUser() {
 	suite.NotEqual(0, newUser.ID)
 }
 
-func (suite *adapterTestSuite) TestNewUserDuplicate() {
+func (suite *usersTestSuite) TestNewUserDuplicate() {
 	u := user.User{
 		ID:       1,
 		Login:    "u1",
@@ -29,7 +55,7 @@ func (suite *adapterTestSuite) TestNewUserDuplicate() {
 	suite.Nil(got, "")
 }
 
-func (suite *adapterTestSuite) TestGetUserByLogin() {
+func (suite *usersTestSuite) TestGetUserByLogin() {
 	u := &user.User{
 		ID:       1,
 		Login:    "u1",
@@ -40,8 +66,8 @@ func (suite *adapterTestSuite) TestGetUserByLogin() {
 	suite.Equal(u, got)
 }
 
-func (suite *adapterTestSuite) TestGetUserByLoginNotExists() {
-	got, err := suite.a.GetUserByLogin(context.TODO(), "u2")
+func (suite *usersTestSuite) TestGetUserByLoginNotExists() {
+	got, err := suite.a.GetUserByLogin(context.TODO(), "u1000")
 	suite.NoError(err)
 	suite.Nil(got)
 }

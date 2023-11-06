@@ -6,6 +6,10 @@ import (
 	"github.com/k1nky/gophermart/internal/entity/user"
 )
 
+const (
+	DefMaxRows = 100
+)
+
 type Service struct {
 	store            storage
 	transactionLocks map[user.ID]sync.Mutex

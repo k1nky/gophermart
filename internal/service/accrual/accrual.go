@@ -7,13 +7,17 @@ import (
 	"github.com/k1nky/gophermart/internal/entity/order"
 )
 
+const (
+	DefMaxRows = 100
+)
+
 type logger interface {
 	Debugf(template string, args ...interface{})
 	Errorf(template string, args ...interface{})
 }
 
 type Store interface {
-	GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus) ([]*order.Order, error)
+	GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus, maxRows uint) ([]*order.Order, error)
 	UpdateOrder(ctx context.Context, o order.Order) error
 }
 
@@ -43,7 +47,7 @@ func (s *Service) getNewOrders(ctx context.Context) <-chan *order.Order {
 		for {
 			select {
 			case <-t.C:
-				orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing})
+				orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing}, DefMaxRows)
 				s.log.Debugf("accrual: got %d new orders", len(orders))
 				if err != nil {
 					s.log.Errorf("accrual: %v", err)

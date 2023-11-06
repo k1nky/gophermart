@@ -45,23 +45,20 @@ func (a *Adapter) GetOrderByNumber(ctx context.Context, number order.OrderNumber
 	return orders[0], err
 }
 
-// Возвращает заказы с заданными статусами
-func (a *Adapter) GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus) ([]*order.Order, error) {
+// Возвращает не более maxRows заказов с заданными статусами
+func (a *Adapter) GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus, maxRows uint) ([]*order.Order, error) {
 	args := make([]string, 0, len(statuses))
 	// преобразуем в совместимый с postgres тип
-	// TODO: возможно можно через Valuer интерфейс
 	for _, v := range statuses {
 		args = append(args, string(v))
 	}
-	// TODO: pass limit as an argument
-	orders, err := a.selectOrders(ctx, "status = any($1::order_status[])", 100, args)
+	orders, err := a.selectOrders(ctx, "status = any($1::order_status[])", maxRows, args)
 	return orders, err
 }
 
-// Возвращает заказы для указанного пользователя в порядке возрастания даты загрузки
-func (a *Adapter) GetOrdersByUserID(ctx context.Context, userID user.ID) ([]*order.Order, error) {
-	// TODO: pass limit as an argument
-	orders, err := a.selectOrders(ctx, "user_id = $1 ORDER BY uploaded_at ASC", 100, userID)
+// Возвращает не более maxRows заказов для указанного пользователя в порядке возрастания даты загрузки
+func (a *Adapter) GetOrdersByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*order.Order, error) {
+	orders, err := a.selectOrders(ctx, "user_id = $1 ORDER BY uploaded_at ASC", maxRows, userID)
 	return orders, err
 }
 
@@ -89,7 +86,7 @@ func (a *Adapter) NewOrder(ctx context.Context, o order.Order) (*order.Order, er
 
 // Обновляет заказ
 func (a *Adapter) UpdateOrder(ctx context.Context, o order.Order) error {
-	// не допускам обновление уже обработанного заказ
+	// не допускаем обновление уже обработанного заказ
 	const updateOrderQuery = `
 		UPDATE orders 
 		SET status = $1, accrual = $2
@@ -105,16 +102,17 @@ func (a *Adapter) UpdateOrder(ctx context.Context, o order.Order) error {
 		return err
 	} else {
 		if rows, err := r.RowsAffected(); rows == 0 || err != nil {
-			return fmt.Errorf("order %s %w", o.Number, order.ErrAlreadyProcessed)
+			return fmt.Errorf("%s %w", o.Number, order.ErrAlreadyProcessed)
 		}
 	}
 	// добавляем соответствующую транзакцию
 	if o.Accrual != nil && o.Status == order.StatusProcessed {
 		// получаем последнюю транзакцию пользователя
 		// для новой транзакции увеличиваем последовательный номер транзакции пользователя на 1 и баланс на размер начисления
+		// последовательный номер уникальный для каждого пользователя
 		const transactionQuery = `
 			WITH user_balance AS (
-				SELECT COALESCE(SUM(user_transaction_seq), 0) seq, COALESCE(SUM(balance), 0) balance FROM transactions WHERE user_id = $1 ORDER BY seq DESC LIMIT 1
+				SELECT coalesce(sum(user_transaction_seq), 0) seq, coalesce(sum(balance), 0) balance FROM transactions WHERE user_id = $1 ORDER BY seq DESC LIMIT 1
 			)
 			INSERT INTO transactions(
 				user_id,

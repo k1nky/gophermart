@@ -34,10 +34,9 @@ func (a *Adapter) selectWithdrawals(ctx context.Context, where string, limit uin
 	return withdrawals, nil
 }
 
-// Возвращает список запросов на списание для указанного пользователя
-func (a *Adapter) GetWithdrawalsByUserID(ctx context.Context, userID user.ID) ([]*withdraw.Withdraw, error) {
-	// TODO: pass limit as an argument
-	withdrawals, err := a.selectWithdrawals(ctx, "user_id = $1 ORDER BY processed_at ASC", 100, userID)
+// Возвращает не более maxRows запросов на списание для указанного пользователя
+func (a *Adapter) GetWithdrawalsByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*withdraw.Withdraw, error) {
+	withdrawals, err := a.selectWithdrawals(ctx, "user_id = $1 ORDER BY processed_at ASC", maxRows, userID)
 	return withdrawals, err
 }
 
