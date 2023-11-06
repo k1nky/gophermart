@@ -17,7 +17,7 @@ import (
 const (
 	DefRequestTimeout   = 5 * time.Second
 	DefRetryCount       = 1
-	DefRetryMaxWaitTime = 10 * time.Second
+	DefRetryMaxWaitTime = 90 * time.Second
 )
 
 var (

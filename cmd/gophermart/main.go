@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-
 	cfg := config.Config{}
 	if err := config.Parse(&cfg); err != nil {
 		panic(err)

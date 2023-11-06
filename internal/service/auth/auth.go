@@ -31,7 +31,6 @@ func (s *Service) Register(ctx context.Context, newUser user.User) (token string
 	if u, err = s.store.NewUser(ctx, newUser); err != nil {
 		return "", fmt.Errorf("auth: %w", err)
 	}
-	// TODO: handle token error
 	token, err = s.GenerateToken(user.NewPrivateClaims(*u))
 	return token, err
 }
@@ -47,7 +46,6 @@ func (s *Service) Login(ctx context.Context, credentials user.User) (string, err
 	if err := u.CheckPassword(credentials.Password); err != nil {
 		return "", fmt.Errorf("auth: %s %w", credentials.Login, user.ErrInvalidCredentials)
 	}
-	// TODO: handle token error
 	token, err := s.GenerateToken(user.NewPrivateClaims(*u))
 	return token, err
 }

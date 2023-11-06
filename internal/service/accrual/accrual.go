@@ -78,10 +78,11 @@ func (s *Service) updateOrder(ctx context.Context, orders <-chan *order.Order) <
 				s.log.Debugf("accrual: fetch order #%s", o.Number)
 				got, err := s.orderAccrual.FetchOrder(ctx, o.Number)
 				if err != nil {
-					// TODO: handle error
+					s.log.Errorf("accrual: fetch order #%s: %v", o.Number, err)
 					continue
 				}
 				if got == nil {
+					// заказ не зарегистрирован в системе начислений
 					continue
 				}
 				if got.Status == order.StatusRegistered {
@@ -102,10 +103,12 @@ func (s *Service) updateOrder(ctx context.Context, orders <-chan *order.Order) <
 
 func (s *Service) Process(ctx context.Context) {
 	go func() {
-
+		// У сервиса accrual есть ограничение по количеству запросов. Адаптер этого сервиса умеет
+		// повторять запрос с ожидаением Retry-After. В этом случае getNewOrders также будет ожидать и
+		// не добалять в очередь новые запросы для проверки начислений.
 		for o := range s.updateOrder(ctx, s.getNewOrders(ctx)) {
 			if err := s.store.UpdateOrder(ctx, *o); err != nil {
-				//
+				s.log.Errorf("accrual: poll order #%s: %v", o.Number, err)
 				continue
 			}
 		}
