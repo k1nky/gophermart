@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,8 @@ import (
 
 type httpAdapterTestSuite struct {
 	suite.Suite
-	authService *mock.MockauthService
+	authService    *mock.MockauthService
+	accountService *mock.MockaccountService
 }
 
 func TestHTTPAdapter(t *testing.T) {
@@ -26,6 +28,7 @@ func TestHTTPAdapter(t *testing.T) {
 func (suite *httpAdapterTestSuite) SetupTest() {
 	ctrl := gomock.NewController(suite.T())
 	suite.authService = mock.NewMockauthService(ctrl)
+	suite.accountService = mock.NewMockaccountService(ctrl)
 }
 
 func (suite *httpAdapterTestSuite) TestRegister() {
@@ -136,6 +139,48 @@ func (suite *httpAdapterTestSuite) TestLogin() {
 			suite.authService.EXPECT().Login(gomock.Any(), gomock.Any()).Return(tt.expectLogin...)
 		}
 		a.Login(w, r)
+		suite.Equal(tt.want.statusCode, w.Code)
+	}
+}
+
+func (suite *httpAdapterTestSuite) TestNewOrder() {
+	type want struct {
+		statusCode int
+	}
+	tests := []struct {
+		name       string
+		payload    string
+		want       want
+		mockExpect []interface{}
+	}{
+		{
+			name:       "Success",
+			payload:    "12345678903",
+			want:       want{statusCode: http.StatusAccepted},
+			mockExpect: []interface{}{nil, nil},
+		},
+		{
+			name:       "Invalid number",
+			payload:    "123456789",
+			want:       want{statusCode: http.StatusUnprocessableEntity},
+			mockExpect: []interface{}{},
+		},
+	}
+	a := &Adapter{
+		account: suite.accountService,
+	}
+	claims := user.PrivateClaims{
+		ID:    user.ID(1),
+		Login: "u1",
+	}
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(tt.payload))
+
+		if len(tt.mockExpect) > 0 {
+			suite.accountService.EXPECT().NewOrder(gomock.Any(), gomock.Any()).Return(tt.mockExpect...)
+		}
+		a.NewOrder(w, r.WithContext(context.WithValue(r.Context(), keyUserClaims, claims)))
 		suite.Equal(tt.want.statusCode, w.Code)
 	}
 }

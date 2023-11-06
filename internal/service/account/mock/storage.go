@@ -68,33 +68,33 @@ func (mr *MockstorageMockRecorder) GetOrderByNumber(ctx, number interface{}) *go
 }
 
 // GetOrdersByUserID mocks base method.
-func (m *Mockstorage) GetOrdersByUserID(ctx context.Context, userID user.ID) ([]*order.Order, error) {
+func (m *Mockstorage) GetOrdersByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*order.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID)
+	ret := m.ctrl.Call(m, "GetOrdersByUserID", ctx, userID, maxRows)
 	ret0, _ := ret[0].([]*order.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOrdersByUserID indicates an expected call of GetOrdersByUserID.
-func (mr *MockstorageMockRecorder) GetOrdersByUserID(ctx, userID interface{}) *gomock.Call {
+func (mr *MockstorageMockRecorder) GetOrdersByUserID(ctx, userID, maxRows interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*Mockstorage)(nil).GetOrdersByUserID), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrdersByUserID", reflect.TypeOf((*Mockstorage)(nil).GetOrdersByUserID), ctx, userID, maxRows)
 }
 
 // GetWithdrawalsByUserID mocks base method.
-func (m *Mockstorage) GetWithdrawalsByUserID(ctx context.Context, userID user.ID) ([]*withdraw.Withdraw, error) {
+func (m *Mockstorage) GetWithdrawalsByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*withdraw.Withdraw, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWithdrawalsByUserID", ctx, userID)
+	ret := m.ctrl.Call(m, "GetWithdrawalsByUserID", ctx, userID, maxRows)
 	ret0, _ := ret[0].([]*withdraw.Withdraw)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetWithdrawalsByUserID indicates an expected call of GetWithdrawalsByUserID.
-func (mr *MockstorageMockRecorder) GetWithdrawalsByUserID(ctx, userID interface{}) *gomock.Call {
+func (mr *MockstorageMockRecorder) GetWithdrawalsByUserID(ctx, userID, maxRows interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByUserID", reflect.TypeOf((*Mockstorage)(nil).GetWithdrawalsByUserID), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWithdrawalsByUserID", reflect.TypeOf((*Mockstorage)(nil).GetWithdrawalsByUserID), ctx, userID, maxRows)
 }
 
 // NewOrder mocks base method.
