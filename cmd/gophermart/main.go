@@ -51,5 +51,6 @@ func run(ctx context.Context, cfg config.Config, log *logger.Logger) {
 	accrualClient := accrual.New(cfg.AccrualSystemAddress)
 	accrual := accural.New(store, accrualClient, log)
 	accrual.Process(ctx)
-	http.New(ctx, string(cfg.RunAddress), authService, account, log)
+	httpServer := http.New(authService, account, log)
+	httpServer.ListenAndServe(ctx, cfg.RunAddress.String())
 }

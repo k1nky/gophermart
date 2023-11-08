@@ -3,10 +3,17 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+)
+
+const (
+	DefaultReadTimeout  = 10 * time.Second
+	DefaultWriteTimeout = 10 * time.Second
+	DefaultCloseTimeout = 5 * time.Second
 )
 
 type Adapter struct {
@@ -15,28 +22,38 @@ type Adapter struct {
 	log     logger
 }
 
-func New(ctx context.Context, listen string, auth authService, account accountService, log logger) *Adapter {
+func New(auth authService, account accountService, log logger) *Adapter {
 	a := &Adapter{
 		auth:    auth,
 		account: account,
 		log:     log,
 	}
 
+	return a
+}
+
+func (a *Adapter) ListenAndServe(ctx context.Context, addr string) {
 	srv := &http.Server{
 		Handler:      a.buildRouter(),
-		Addr:         listen,
-		WriteTimeout: 10 * time.Second,
-		ReadTimeout:  10 * time.Second,
+		Addr:         addr,
+		WriteTimeout: DefaultReadTimeout,
+		ReadTimeout:  DefaultWriteTimeout,
 	}
-
 	go func() {
-		// TODO: graceful shutdown
 		if err := srv.ListenAndServe(); err != nil {
-			log.Errorf("", err)
+			a.log.Debugf("http server was closed")
+			if !errors.Is(err, http.ErrServerClosed) {
+				a.log.Errorf("unexpected server closing: %v", err)
+			}
 		}
 	}()
-
-	return a
+	go func() {
+		<-ctx.Done()
+		a.log.Debugf("closing http server")
+		c, cancel := context.WithTimeout(context.Background(), DefaultCloseTimeout)
+		defer cancel()
+		srv.Shutdown(c)
+	}()
 }
 
 func (a *Adapter) buildRouter() http.Handler {
