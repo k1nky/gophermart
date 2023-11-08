@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -13,12 +12,14 @@ import (
 type Adapter struct {
 	auth    authService
 	account accountService
+	log     logger
 }
 
-func New(ctx context.Context, listen string, auth authService, account accountService) *Adapter {
+func New(ctx context.Context, listen string, auth authService, account accountService, log logger) *Adapter {
 	a := &Adapter{
 		auth:    auth,
 		account: account,
+		log:     log,
 	}
 
 	srv := &http.Server{
@@ -31,7 +32,7 @@ func New(ctx context.Context, listen string, auth authService, account accountSe
 	go func() {
 		// TODO: graceful shutdown
 		if err := srv.ListenAndServe(); err != nil {
-			log.Panic(err)
+			log.Errorf("", err)
 		}
 	}()
 
@@ -40,13 +41,13 @@ func New(ctx context.Context, listen string, auth authService, account accountSe
 
 func (a *Adapter) buildRouter() http.Handler {
 	r := chi.NewRouter()
+	r.Use(LoggingMiddleware(a.log))
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", a.Register)
 		r.Post("/login", a.Login)
 		r.With(AuthorizeMiddleware(a.auth)).Get("/balance", a.GetBalance)
 		r.With(AuthorizeMiddleware(a.auth)).Get("/orders", a.GetOrder)
 		r.With(AuthorizeMiddleware(a.auth)).Post("/orders", a.NewOrder)
-		// r.With(AuthorizeMiddleware(a.auth)).Get("/balance/withdrawals", a.GetWithdrawals)
 		r.With(AuthorizeMiddleware(a.auth)).Get("/withdrawals", a.GetWithdrawals)
 		r.With(AuthorizeMiddleware(a.auth)).Post("/balance/withdraw", a.NewWithdraw)
 	})

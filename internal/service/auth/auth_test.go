@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/k1nky/gophermart/internal/entity/user"
+	log "github.com/k1nky/gophermart/internal/logger"
 	"github.com/k1nky/gophermart/internal/service/auth/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -25,7 +26,7 @@ func TestAuthService(t *testing.T) {
 func (suite *authServiceTestSuite) SetupTest() {
 	ctrl := gomock.NewController(suite.Suite.T())
 	suite.store = mock.NewMockstorage(ctrl)
-	suite.svc = New("secret", 3*time.Hour, suite.store)
+	suite.svc = New("secret", 3*time.Hour, suite.store, &log.Blackhole{})
 }
 
 func (suite *authServiceTestSuite) TestRegisterNewUser() {

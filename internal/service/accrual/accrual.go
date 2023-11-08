@@ -8,30 +8,21 @@ import (
 )
 
 const (
-	DefMaxRows = 100
+	// обрабатываем за раз не более DefaultMaxRows заказов
+	DefaultMaxRows = 100
+	// максимальный размер очереди заказов на проверку начислений
+	DefaultMaxOrderQueueSize = 2
+	// интервал обновления заказов
+	DefaultUpdateInterval = 5 * time.Second
 )
 
-type logger interface {
-	Debugf(template string, args ...interface{})
-	Errorf(template string, args ...interface{})
-}
-
-type Store interface {
-	GetOrdersByStatus(ctx context.Context, statuses []order.OrderStatus, maxRows uint) ([]*order.Order, error)
-	UpdateOrder(ctx context.Context, o order.Order) error
-}
-
-type OrderAccrual interface {
-	FetchOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error)
-}
-
 type Service struct {
-	store        Store
-	orderAccrual OrderAccrual
+	store        store
+	orderAccrual orderAccrual
 	log          logger
 }
 
-func New(store Store, orderAccrual OrderAccrual, l logger) *Service {
+func New(store store, orderAccrual orderAccrual, l logger) *Service {
 	return &Service{
 		log:          l,
 		orderAccrual: orderAccrual,
@@ -40,14 +31,14 @@ func New(store Store, orderAccrual OrderAccrual, l logger) *Service {
 }
 
 func (s *Service) getNewOrders(ctx context.Context) <-chan *order.Order {
-	ordersCh := make(chan *order.Order, 2)
+	ordersCh := make(chan *order.Order, DefaultMaxOrderQueueSize)
 	go func() {
-		t := time.NewTicker(5 * time.Second)
+		t := time.NewTicker(DefaultUpdateInterval)
 		defer t.Stop()
 		for {
 			select {
 			case <-t.C:
-				orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing}, DefMaxRows)
+				orders, err := s.store.GetOrdersByStatus(ctx, []order.OrderStatus{order.StatusNew, order.StatusProcessing}, DefaultMaxRows)
 				s.log.Debugf("accrual: got %d new orders", len(orders))
 				if err != nil {
 					s.log.Errorf("accrual: %v", err)
@@ -66,7 +57,7 @@ func (s *Service) getNewOrders(ctx context.Context) <-chan *order.Order {
 }
 
 func (s *Service) updateOrder(ctx context.Context, orders <-chan *order.Order) <-chan *order.Order {
-	ordersCh := make(chan *order.Order, 2)
+	ordersCh := make(chan *order.Order, DefaultMaxOrderQueueSize)
 	go func() {
 		for {
 			select {
@@ -74,11 +65,10 @@ func (s *Service) updateOrder(ctx context.Context, orders <-chan *order.Order) <
 				close(ordersCh)
 				return
 			case o := <-orders:
-				time.Sleep(10 * time.Second)
 				s.log.Debugf("accrual: fetch order #%s", o.Number)
 				got, err := s.orderAccrual.FetchOrder(ctx, o.Number)
 				if err != nil {
-					s.log.Errorf("accrual: fetch order #%s: %v", o.Number, err)
+					s.log.Errorf("accrual: failed fetching order #%s: %v", o.Number, err)
 					continue
 				}
 				if got == nil {
@@ -105,7 +95,7 @@ func (s *Service) Process(ctx context.Context) {
 	go func() {
 		// У сервиса accrual есть ограничение по количеству запросов. Адаптер этого сервиса умеет
 		// повторять запрос с ожидаением Retry-After. В этом случае getNewOrders также будет ожидать и
-		// не добалять в очередь новые запросы для проверки начислений.
+		// не добавлять в очередь новые запросы для проверки начислений.
 		for o := range s.updateOrder(ctx, s.getNewOrders(ctx)) {
 			if err := s.store.UpdateOrder(ctx, *o); err != nil {
 				s.log.Errorf("accrual: poll order #%s: %v", o.Number, err)

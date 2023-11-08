@@ -15,9 +15,12 @@ import (
 )
 
 const (
-	DefRequestTimeout   = 5 * time.Second
-	DefRetryCount       = 1
-	DefRetryMaxWaitTime = 90 * time.Second
+	// Таймаут для запроса к сервису начислений
+	DefaultRequestTimeout = 5 * time.Second
+	// Количество попыток повторной отправки запроса к сервису начислений
+	DefaultRetryCount = 1
+	// Максимальное время ожидания до отправки запроса в случае превышения лимита запросов к сервису начислений
+	DefaultRetryMaxWaitTime = 90 * time.Second
 )
 
 var (
@@ -39,9 +42,9 @@ func New(url string) *Adapter {
 	return &Adapter{
 		url: url,
 		cli: resty.New().
-			SetTimeout(DefRequestTimeout).
-			SetRetryCount(DefRetryCount).
-			SetRetryMaxWaitTime(DefRetryMaxWaitTime).
+			SetTimeout(DefaultRequestTimeout).
+			SetRetryCount(DefaultRetryCount).
+			SetRetryMaxWaitTime(DefaultRetryMaxWaitTime).
 			SetRetryAfter(func(c *resty.Client, r *resty.Response) (time.Duration, error) {
 				// если в ответе был заголовок Retry-After в формате <seconds>
 				// то постараемся придерживаться его, но не дольше MaxWaitTime
@@ -68,18 +71,18 @@ func (a *Adapter) newRequest() *resty.Request {
 func (a *Adapter) FetchOrder(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
 	req := a.newRequest()
 	req.AddRetryCondition(func(response *resty.Response, err error) bool {
-		// если на запрос придет Too many requests, то сделаем retry в соответствии с настройками клиента
+		// если в ответ придет TooManyRequests, то сделаем retry в соответствии с настройками клиента,
 		// описанными в конструкторе
 		return response.StatusCode() == http.StatusTooManyRequests
 	})
 	// Получение информации о расчёте начислений баллов лояльности.
 	url, err := url.JoinPath(a.url, "/api/orders", string(number))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FetchOrder: failed: %w", err)
 	}
 	resp, err := req.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("FetchOrder: failed: %w", err)
 	}
 
 	switch resp.StatusCode() {
@@ -98,5 +101,5 @@ func (a *Adapter) FetchOrder(ctx context.Context, number order.OrderNumber) (*or
 		// заказ не зарегистрирован в системе расчета.
 		return nil, nil
 	}
-	return nil, fmt.Errorf("%d %s: %w", resp.StatusCode(), resp.Body(), ErrUnexpectedResponse)
+	return nil, fmt.Errorf("FetchOrder: failed with code %d and body %s: %w", resp.StatusCode(), resp.Body(), ErrUnexpectedResponse)
 }

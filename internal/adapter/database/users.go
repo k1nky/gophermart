@@ -17,13 +17,13 @@ func (a *Adapter) GetUserByLogin(ctx context.Context, login string) (*user.User,
 	const query = `SELECT user_id, password FROM users WHERE login=$1`
 	row := a.QueryRowContext(ctx, query, login)
 	if err := row.Err(); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&u.ID, &u.Password); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	return u, nil
 }
@@ -42,10 +42,10 @@ func (a *Adapter) NewUser(ctx context.Context, u user.User) (*user.User, error) 
 		if a.hasUniqueViolationError(err) {
 			return nil, fmt.Errorf("%s %w", u.Login, user.ErrDuplicateLogin)
 		}
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&u.ID); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	return &u, nil
 }

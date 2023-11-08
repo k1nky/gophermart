@@ -37,6 +37,9 @@ func (a *Adapter) selectWithdrawals(ctx context.Context, where string, limit uin
 // Возвращает не более maxRows запросов на списание для указанного пользователя
 func (a *Adapter) GetWithdrawalsByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*withdraw.Withdraw, error) {
 	withdrawals, err := a.selectWithdrawals(ctx, "user_id = $1 ORDER BY processed_at ASC", maxRows, userID)
+	if err != nil {
+		err = NewExecutingQueryError(err)
+	}
 	return withdrawals, err
 }
 
@@ -51,18 +54,18 @@ func (a *Adapter) GetBalanceByUser(ctx context.Context, userID user.ID) (user.Ba
 	`
 	row := a.QueryRowContext(ctx, query, userID)
 	if err := row.Err(); err != nil {
-		return balance, err
+		return balance, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&balance.Current); err != nil {
-		return balance, err
+		return balance, NewExecutingQueryError(err)
 	}
 	// получаем сумму всех списаний
 	row = a.QueryRowContext(ctx, `SELECT COALESCE(SUM(amount),0) FROM withdrawals WHERE user_id=$1 AND processed_at IS NOT NULL`, userID)
 	if err := row.Err(); err != nil {
-		return balance, err
+		return balance, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&balance.Withdrawn); err != nil {
-		return balance, err
+		return balance, NewExecutingQueryError(err)
 	}
 	return balance, nil
 }
@@ -71,7 +74,7 @@ func (a *Adapter) GetBalanceByUser(ctx context.Context, userID user.ID) (user.Ba
 func (a *Adapter) NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdraw.Withdraw, error) {
 	tx, err := a.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	defer tx.Rollback()
 
@@ -86,10 +89,10 @@ func (a *Adapter) NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdr
 		if a.hasUniqueViolationError(err) {
 			return nil, fmt.Errorf("order %s %w", w.Number, order.ErrDuplicated)
 		}
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&w.ID, &w.ProcessedAt); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 
 	// добавляем новую транзакцию на списание
@@ -112,16 +115,18 @@ func (a *Adapter) NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdr
 	`
 	row = tx.QueryRowContext(ctx, newTransactionQuery, w.UserID, w.ID, w.Sum)
 	if err := row.Err(); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	// если в результате списание баланс отрицательный, то откатываем транзакцию
 	var balance float32
 	if err := row.Scan(&balance); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if balance < 0 {
 		return nil, withdraw.ErrInsufficientBalance
 	}
-	err = tx.Commit()
+	if err = tx.Commit(); err != nil {
+		err = NewExecutingQueryError(err)
+	}
 	return &w, err
 }

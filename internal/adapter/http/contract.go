@@ -22,3 +22,9 @@ type accountService interface {
 	GetUserWithdrawals(ctx context.Context, userID user.ID) ([]*withdraw.Withdraw, error)
 	NewWithdraw(ctx context.Context, w withdraw.Withdraw) error
 }
+
+type logger interface {
+	Errorf(template string, args ...interface{})
+	Infof(template string, args ...interface{})
+	Debugf(template string, args ...interface{})
+}

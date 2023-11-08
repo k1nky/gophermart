@@ -37,7 +37,7 @@ func (a *Adapter) selectOrders(ctx context.Context, where string, limit uint, ar
 func (a *Adapter) GetOrderByNumber(ctx context.Context, number order.OrderNumber) (*order.Order, error) {
 	orders, err := a.selectOrders(ctx, "number = $1", 1, number)
 	if err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if len(orders) == 0 {
 		return nil, nil
@@ -53,12 +53,18 @@ func (a *Adapter) GetOrdersByStatus(ctx context.Context, statuses []order.OrderS
 		args = append(args, string(v))
 	}
 	orders, err := a.selectOrders(ctx, "status = any($1::order_status[])", maxRows, args)
+	if err != nil {
+		err = NewExecutingQueryError(err)
+	}
 	return orders, err
 }
 
 // Возвращает не более maxRows заказов для указанного пользователя в порядке возрастания даты загрузки
 func (a *Adapter) GetOrdersByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*order.Order, error) {
 	orders, err := a.selectOrders(ctx, "user_id = $1 ORDER BY uploaded_at ASC", maxRows, userID)
+	if err != nil {
+		err = NewExecutingQueryError(err)
+	}
 	return orders, err
 }
 
@@ -74,10 +80,10 @@ func (a *Adapter) NewOrder(ctx context.Context, o order.Order) (*order.Order, er
 		if a.hasUniqueViolationError(err) {
 			return nil, fmt.Errorf("%s %w", o.Number, order.ErrDuplicated)
 		}
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	if err := row.Scan(&o.ID, &o.UploadedAt); err != nil {
-		return nil, err
+		return nil, NewExecutingQueryError(err)
 	}
 	o.Status = order.StatusNew
 	return &o, nil
@@ -94,12 +100,12 @@ func (a *Adapter) UpdateOrder(ctx context.Context, o order.Order) error {
 	`
 	tx, err := a.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return NewExecutingQueryError(err)
 	}
 	defer tx.Rollback()
 
 	if r, err := tx.ExecContext(ctx, updateOrderQuery, o.Status, o.Accrual, o.ID); err != nil {
-		return err
+		return NewExecutingQueryError(err)
 	} else {
 		if rows, err := r.RowsAffected(); rows == 0 || err != nil {
 			return fmt.Errorf("%s %w", o.Number, order.ErrAlreadyProcessed)
@@ -127,9 +133,11 @@ func (a *Adapter) UpdateOrder(ctx context.Context, o order.Order) error {
 			)
 		`
 		if _, err := tx.ExecContext(ctx, transactionQuery, o.UserID, o.ID, o.Accrual); err != nil {
-			return err
+			return NewExecutingQueryError(err)
 		}
 	}
-	err = tx.Commit()
-	return err
+	if err = tx.Commit(); err != nil {
+		return NewExecutingQueryError(err)
+	}
+	return nil
 }

@@ -17,3 +17,8 @@ type storage interface {
 	GetWithdrawalsByUserID(ctx context.Context, userID user.ID, maxRows uint) ([]*withdraw.Withdraw, error)
 	NewWithdraw(ctx context.Context, w withdraw.Withdraw) (*withdraw.Withdraw, error)
 }
+
+type logger interface {
+	Debugf(template string, args ...interface{})
+	Errorf(template string, args ...interface{})
+}

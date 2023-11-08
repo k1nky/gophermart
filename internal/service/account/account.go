@@ -1,15 +1,17 @@
 package account
 
 const (
-	DefMaxRows = 100
+	DefaultMaxRows = 100
 )
 
 type Service struct {
 	store storage
+	log   logger
 }
 
-func New(store storage) *Service {
+func New(store storage, log logger) *Service {
 	return &Service{
 		store: store,
+		log:   log,
 	}
 }
